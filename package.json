@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/Nicklason/node-bptf-listings/issues"
   },
-  "homepage": "https://github.com/Nicklason/node-bptf-listings#readme"
+  "homepage": "https://github.com/Nicklason/node-bptf-listings#readme",
+  "dependencies": {
+    "request": "^2.83.0"
+  }
 }
