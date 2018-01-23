@@ -12,6 +12,12 @@ function Listings(options) {
     this.apiToken = options.apiToken;
     this.retry = options.retry || true;
     this.retryTime = options.retryTime || 2 * 1000;
+    
+    this.removeWait = options.removeWait || 1 * 1000;
+    this.createWait = options.createWait || 1 * 1000;
+
+    this.cap = -1;
+    this.listings = [];
 
     this.request = request;
 }
