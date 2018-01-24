@@ -1,62 +1,75 @@
 var Listings = require('../index.js');
 
 var options = {
-    "apiToken": ""
+    "token": "", // bptf api token
+    "key": "" // steam api key
 };
 
 var listings = new Listings(options);
 
-// Create listings, see bptf's documentation.
-listings.createListings([{
-    intent: 0,
-    item: {
-        item_name: 378,
-        quality: 11
-    },
-    currencies: {
-        keys: 0,
-        metal: 3.33
+// You have to run this function and get no errors in the callback function in order for the module to work properly.
+listings.init(function (err) {
+    if (err) {
+        console.log(err);
+        return;
     }
-}, {
-    intent: 1,
-    id: 123456,
-    currencies: {
-        keys: 0,
-        metal: 10
-    }
-}, {
-    intent: 1,
-    id: 5868049119
-}]);
+
+    // Create listings and force them to update if one was already made
+    listings.createListings([{
+        intent: 1,
+        id: 6177771131,
+        currencies: {
+            keys: 0,
+            metal: 20
+        }
+    }, {
+        intent: 0,
+        item: {
+            defindex: 5050,
+            craftable: false,
+        },
+        currencies: {
+            keys: 0,
+            metal: 8
+        }
+    }, {
+        intent: 0,
+        item: {
+            defindex: 5021,
+            quality: 6,
+            craftable: true,
+            killstreak: 0,
+            australium: false
+        },
+        currencies: {
+            keys: 0,
+            metal: 21
+        },
+        details: "Hello!"
+    }], true);
+});
 
 // Event for when a listing has been removed.
-listings.on('removed', function(removed) {
+listings.on('removed', function (removed) {
     console.log("Removed a listing with the id " + removed);
 });
 
 // When bptf says that you have to wait before trying to relist an item, this will also be cought by the error event.
-listings.on('retry', function(name, time) {
+listings.on('retry', function (name, time) {
     console.log("Could not create a listing for " + name + ". You should try again at " + time);
 });
 
 // Event for when bptf returns an error when trying to make a listing (does not include when removing).
-listings.on('error', function(name, error) {
-    console.log("An error occurred while trying to make a listing for " + name + ": " + error);
+listings.on('error', function (type, name, error) {
+    console.log("An error occurred while trying to " + type + " a listing (" + name + "): " + error);
 });
 
 // Event for when a listing has been created.
-listings.on('created', function(name) {
+listings.on('created', function (name) {
     console.log("Created a listing for " + name);
 });
 
-// Event for when we are creating / removing listings.
-listings.on('action', function(type, listings) {
-    switch (type) {
-        case 1:
-            console.log("Creating...");
-            break;
-        case 2:
-            console.log("Removing...");
-            break;
-    }
+// Event for when we the actions list updates
+listings.on('actions', function (create, remove) {
+    console.log("Create " + create.length + " - Remove " + remove.length);
 });

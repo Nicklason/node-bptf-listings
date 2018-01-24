@@ -1,6 +1,6 @@
 {
   "name": "bptf-listings",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Manage listings on backpack.tf",
   "main": "index.js",
   "scripts": {
