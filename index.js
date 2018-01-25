@@ -19,7 +19,7 @@ function Listings(options) {
 
     this.cap = -1;
     this.listings = [];
-    this.premotes = -1;
+    this.promotes = -1;
 
     this.actions = {
         remove: [],
