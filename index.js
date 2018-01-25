@@ -19,6 +19,7 @@ function Listings(options) {
 
     this.cap = -1;
     this.listings = [];
+    this.premotesRemaining = -1;
 
     this.actions = {
         remove: [],
