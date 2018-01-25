@@ -27,6 +27,8 @@ function Listings(options) {
 
     this.request = request;
     this.items = new items({ apiKey: options.key });
+
+    this.ready = false;
 }
 
 Listings.prototype.init = function(callback) {
@@ -42,6 +44,8 @@ Listings.prototype.init = function(callback) {
                 callback(err);
                 return;
             }
+
+            self.ready = true;
             callback(null);
         });
     });
