@@ -26,15 +26,15 @@ function Listings(options) {
         create: []
     };
 
-    this.request = request;
-    this.items = new items({ apiKey: options.key });
+    this._request = request;
+    this._items = new items({ apiKey: options.key });
 
     this.ready = false;
 }
 
 Listings.prototype.init = function(callback) {
     var self = this;
-    self.items.init(function(err) {
+    self._items.init(function(err) {
         if (err) {
             callback(err);
             return;
