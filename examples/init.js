@@ -49,6 +49,11 @@ listings.init(function (err) {
     }], true);
 });
 
+// Event for when a heartbeat has been successfully sent.
+listings.on('bumped', function(count) {
+    console.log("Bumped " + count + " " + (count == 1 ? 'listing' : 'listings'));
+});
+
 // Event for when a listing has been removed.
 listings.on('removed', function (removed) {
     console.log("Removed a listing with the id " + removed);

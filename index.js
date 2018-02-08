@@ -1,8 +1,7 @@
 'use strict';
 
-const request = require('request');
-
-const items = require('tf2-items');
+var request = require('request');
+var items = require('tf2-items');
 
 module.exports = Listings;
 
@@ -26,25 +25,28 @@ function Listings(options) {
         create: []
     };
 
-    this._request = request;
-    this._items = new items({ apiKey: options.key });
+    this.request = request;
+    this.items = new items({ apiKey: options.key });
 
     this.ready = false;
 }
 
 Listings.prototype.init = function(callback) {
     var self = this;
-    self._items.init(function(err) {
+    self.items.init(function(err) {
         if (err) {
             callback(err);
             return;
         }
 
-        self.getListings(function (err, response) {
+        self.getListings(function (err) {
             if (err) {
                 callback(err);
                 return;
             }
+
+            self.sendHeartbeat();
+            self._timer = setInterval(Listings.prototype.sendHeartbeat.bind(self), 90 * 1000);
 
             self.ready = true;
             callback(null);
