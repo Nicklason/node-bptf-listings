@@ -50,7 +50,7 @@ listings.init(function (err) {
 });
 
 // Event for when a heartbeat has been successfully sent.
-listings.on('bumped', function(count) {
+listings.on('heartbeat', function(count) {
     console.log("Bumped " + count + " " + (count == 1 ? 'listing' : 'listings'));
 });
 
