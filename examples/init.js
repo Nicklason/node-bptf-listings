@@ -35,17 +35,26 @@ listings.init(function (err) {
     }, {
         intent: 0,
         item: {
-            defindex: 5021,
-            quality: 6,
-            craftable: true,
-            killstreak: 0,
-            australium: false
+            defindex: 30572,
+            quality: 5,
+            effect: 3003
         },
         currencies: {
-            keys: 0,
-            metal: 21
+            keys: 8,
+            metal: 0
         },
-        details: "Hello!"
+        details: "This listing is for a Holy Grail Taunt: The Boston Breakdance"
+    }, {
+        intent: 0,
+        item: {
+            defindex: 30572,
+            quality: 5
+        },
+        currencies: {
+            keys: 8,
+            metal: 0
+        },
+        details: "This listing is for a Unusual Taunt: The Boston Breakdance"
     }], true);
 });
 
