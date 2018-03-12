@@ -33,7 +33,7 @@ function Listings(options) {
 }
 
 Listings.prototype.init = function(callback) {
-    if (!this.steamid64 || typeof this.steamid64 == "string" || !this.steamid64.startsWith('76561198')) {
+    if (!this.steamid64 || typeof this.steamid64 == "string" || !this.steamid64.startsWith('7656')) {
         callback(new Error("Either missing, or the given steamid64 is not valid"));
         return;
     }
