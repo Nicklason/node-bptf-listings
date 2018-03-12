@@ -11,6 +11,7 @@ function Listings(options) {
     options = options || {};
 
     this.token = options.token;
+    this.steamid64 = options.steamid64;
     this.retry = options.retry || true;
     this.retryTime = options.retryTime || 2 * 1000;
 
@@ -32,6 +33,11 @@ function Listings(options) {
 }
 
 Listings.prototype.init = function(callback) {
+    if (!this.steamid64 || typeof this.steamid64 == "string" || !this.steamid64.startsWith('76561198')) {
+        callback(new Error("Either missing, or the given steamid64 is not valid"));
+        return;
+    }
+
     var self = this;
     self.items.init(function(err) {
         if (err) {
@@ -46,7 +52,9 @@ Listings.prototype.init = function(callback) {
             }
 
             self.sendHeartbeat();
-            self._timer = setInterval(Listings.prototype.sendHeartbeat.bind(self), 90 * 1000);
+            self._heartbeatTimer = setInterval(Listings.prototype.sendHeartbeat.bind(self), 90 * 1000);
+            self.updateInventory();
+            self._inventoryTimer = setInterval(Listings.prototype.updateInventory.bind(self), 2 * 60 * 1000);
 
             self.ready = true;
             callback(null);

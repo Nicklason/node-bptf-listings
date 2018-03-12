@@ -1,4 +1,5 @@
 var options = {
+    steamid64: '', // Automatically update your inventory on bptf, set the steamid of the account here
     token: '', // Your backpack.tf access token
     key: '', // Your steam api key
     retryTime: 2000, // Time to wait before trying to do an action again, in milliseconds
