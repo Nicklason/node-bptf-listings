@@ -1,6 +1,6 @@
 {
   "name": "bptf-listings",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "description": "Manage listings on backpack.tf",
   "main": "index.js",
   "scripts": {
@@ -18,6 +18,6 @@
   "homepage": "https://github.com/Nicklason/node-bptf-listings#readme",
   "dependencies": {
     "request": "^2.83.0",
-    "tf2-items": "^1.1.0"
+    "tf2-items": "^2.0.1"
   }
 }
