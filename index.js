@@ -27,7 +27,7 @@ function Listings(options) {
     };
 
     this.request = request;
-    this.items = new items({ apiKey: options.key });
+    this.items = options.items || new items({ apiKey: options.key });
 
     this.ready = false;
 }
