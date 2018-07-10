@@ -1,4 +1,6 @@
-var options = {
+/* eslint-disable */
+
+const options = {
     steamid64: '', // Automatically update your inventory on bptf, set the steamid of the account here
     token: '', // Your backpack.tf access token
     key: '', // Your steam api key

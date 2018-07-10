@@ -1,11 +1,13 @@
-var Listings = require('../index.js');
+/* eslint-disable */
 
-var options = {
-    "token": "", // bptf api token
-    "key": "" // steam api key
+const Listings = require('../index.js');
+
+const options = {
+    token: '', // bptf api token
+    key: '' // steam api key
 };
 
-var listings = new Listings(options);
+let listings = new Listings(options);
 
 // You have to run this function and get no errors in the callback function in order for the module to work properly.
 listings.init(function (err) {
@@ -43,7 +45,7 @@ listings.init(function (err) {
             keys: 8,
             metal: 0
         },
-        details: "This listing is for a Holy Grail Taunt: The Boston Breakdance"
+        details: 'This listing is for a Holy Grail Taunt: The Boston Breakdance'
     }, {
         intent: 0,
         item: {
@@ -54,36 +56,41 @@ listings.init(function (err) {
             keys: 8,
             metal: 0
         },
-        details: "This listing is for a Unusual Taunt: The Boston Breakdance"
+        details: 'This listing is for a Unusual Taunt: The Boston Breakdance'
     }], true);
 });
 
 // Event for when a heartbeat has been successfully sent.
 listings.on('heartbeat', function(count) {
-    console.log("Bumped " + count + " " + (count == 1 ? 'listing' : 'listings'));
+    console.log('Bumped ' + count + ' ' + (count == 1 ? 'listing' : 'listings'));
 });
 
 // Event for when a listing has been removed.
 listings.on('removed', function (removed) {
-    console.log("Removed a listing with the id " + removed);
+    console.log('Removed a listing with the id ' + removed);
 });
 
 // When bptf says that you have to wait before trying to relist an item, this will also be cought by the error event.
 listings.on('retry', function (name, time) {
-    console.log("Could not create a listing for " + name + ". You should try again at " + time);
+    console.log('Could not create a listing for ' + name + '. You should try again at ' + time);
 });
 
 // Event for when bptf returns an error when trying to make a listing (does not include when removing).
 listings.on('error', function (type, name, error) {
-    console.log("An error occurred while trying to " + type + " a listing (" + name + "): " + error);
+    console.log('An error occurred while trying to ' + type + ' a listing (' + name + ')): ' + error);
 });
 
 // Event for when a listing has been created.
 listings.on('created', function (name) {
-    console.log("Created a listing for " + name);
+    console.log('Created a listing for ' + name);
 });
 
 // Event for when we the actions list updates
 listings.on('actions', function (create, remove) {
-    console.log("Create " + create.length + " - Remove " + remove.length);
+    console.log('Create ' + create.length + ' - Remove ' + remove.length);
+});
+
+// Event for when the inventory has been updated on www.backpack.tf
+listings.on('inventory', function () {
+    console.log('The inventory has been updated');
 });
