@@ -1,23 +1,27 @@
 {
-  "name": "bptf-listings",
-  "version": "2.4.2",
-  "description": "Manage listings on backpack.tf",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Nicklason/node-bptf-listings.git"
-  },
-  "author": "Nicklas Marc Pedersen",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/Nicklason/node-bptf-listings/issues"
-  },
-  "homepage": "https://github.com/Nicklason/node-bptf-listings#readme",
-  "dependencies": {
-    "request": "^2.83.0",
-    "tf2-items": "^2.0.1"
-  }
+    "name": "bptf-listings",
+    "version": "2.4.2",
+    "engines": {
+        "node": ">=6.0.0"
+    },
+    "description": "Manage listings on backpack.tf",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Nicklason/node-bptf-listings.git"
+    },
+    "author": "Nicklas Marc Pedersen",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/Nicklason/node-bptf-listings/issues"
+    },
+    "homepage": "https://github.com/Nicklason/node-bptf-listings#readme",
+    "dependencies": {
+        "async": "^2.6.1",
+        "request": "^2.87.0",
+        "tf2-items": "^2.0.5"
+    }
 }

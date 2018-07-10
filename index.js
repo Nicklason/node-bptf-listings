@@ -1,7 +1,8 @@
 'use strict';
 
-var request = require('request');
-var items = require('tf2-items');
+const request = require('request');
+const items = require('tf2-items');
+const async = require('async');
 
 module.exports = Listings;
 
@@ -34,32 +35,47 @@ function Listings(options) {
 
 Listings.prototype.init = function(callback) {
     if (!this.steamid64 || this.steamid64.length != 17) {
-        callback(new Error("Either missing, or the given steamid64 is not valid"));
+        callback(new Error('Either missing, or the given steamid64 is not valid'));
         return;
     }
 
-    var self = this;
-    self.items.init(function(err) {
+    let self = this;
+    async.series([
+        function (callback) {
+            self.items.init(callback);
+        },
+        function (callback) {
+            self.getListings(callback);
+        }
+    ], function (err) {
         if (err) {
             callback(err);
             return;
         }
 
-        self.getListings(function (err) {
-            if (err) {
-                callback(err);
-                return;
-            }
+        self.sendHeartbeat();
+        self._heartbeatTimer = setInterval(Listings.prototype.sendHeartbeat.bind(self), 90 * 1000);
+        self.updateInventory();
+        self._inventoryTimer = setInterval(Listings.prototype.updateInventory.bind(self), 2 * 60 * 1000);
 
-            self.sendHeartbeat();
-            self._heartbeatTimer = setInterval(Listings.prototype.sendHeartbeat.bind(self), 90 * 1000);
-            self.updateInventory();
-            self._inventoryTimer = setInterval(Listings.prototype.updateInventory.bind(self), 2 * 60 * 1000);
-
-            self.ready = true;
-            callback(null);
-        });
+        self.ready = true;
+        callback(null);
     });
+};
+
+Listings.prototype.stop = function () {
+    clearInterval(this._heartbeatTimer);
+    clearInterval(this._inventoryTimer);
+    clearTimeout(this._wait);
+
+    this.ready = false;
+    this.cap = -1;
+    this.listings = [];
+    this.promotes = -1;
+    this.actions = {
+        remove: [],
+        create: []
+    };
 };
 
 require('./lib/http.js');
