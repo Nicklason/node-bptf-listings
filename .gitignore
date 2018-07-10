@@ -62,3 +62,6 @@ tests/
 
 # Visual Studio Code settings file
 .vscode
+
+# "A manifestation of the manifest"
+package-lock.json
