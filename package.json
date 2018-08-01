@@ -1,6 +1,6 @@
 {
     "name": "bptf-listings",
-    "version": "2.5.0",
+    "version": "3.0.0",
     "engines": {
         "node": ">=6.0.0"
     },
@@ -19,9 +19,8 @@
         "url": "https://github.com/Nicklason/node-bptf-listings/issues"
     },
     "homepage": "https://github.com/Nicklason/node-bptf-listings#readme",
-    "dependencies": {
-        "async": "^2.6.1",
-        "request": "^2.87.0",
-        "tf2-items": "^2.0.5"
+    "devDependencies": {
+        "eslint": "^5.2.0",
+        "eslint-config-google": "^0.9.1"
     }
 }
