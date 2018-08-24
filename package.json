@@ -19,8 +19,18 @@
         "url": "https://github.com/Nicklason/node-bptf-listings/issues"
     },
     "homepage": "https://github.com/Nicklason/node-bptf-listings#readme",
+    "dependencies": {
+        "async": "^2.6.1",
+        "events": "^3.0.0",
+        "fast-deep-equal": "^2.0.1",
+        "moment": "^2.22.2",
+        "steamid": "^1.1.0",
+        "tf2-items": "^3.0.0",
+        "util": "^0.11.0"
+    },
     "devDependencies": {
-        "eslint": "^5.2.0",
-        "eslint-config-google": "^0.9.1"
+        "eslint": "^5.4.0",
+        "eslint-config-google": "^0.9.1",
+        "nodemon": "^1.18.3"
     }
 }
