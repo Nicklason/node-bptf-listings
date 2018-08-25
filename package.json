@@ -26,6 +26,7 @@
         "async": "^2.6.1",
         "events": "^3.0.0",
         "fast-deep-equal": "^2.0.1",
+        "isobject": "^3.0.1",
         "moment": "^2.22.2",
         "steamid": "^1.1.0",
         "tf2-currencies": "^1.1.1",

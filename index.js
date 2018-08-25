@@ -81,12 +81,20 @@ Listings.prototype.wait = function (clear) {
     if (clear == false) {
         clearTimeout(this.waitTimer);
     } else {
-        this._wait = setTimeout(Listings.prototype.processActions.bind(this), this.waitTime);
+        this.waitTimer = setTimeout(Listings.prototype.processActions.bind(this), this.waitTime);
     }
 };
 
 Listings.prototype.action = function (type, action) {
+    if (type == 'remove') {
+        const match = this.actions[type].some((id) => id == action);
+        if (match) {
+            return;
+        }
+    }
+
     this.actions[type].push(action);
+    this.wait();
 };
 
 Listings.prototype.startTimers = function () {
