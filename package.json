@@ -1,11 +1,14 @@
 {
     "name": "bptf-listings",
     "version": "3.0.0",
+    "description": "Manage listings on backpack.tf",
+    "main": "index.js",
     "engines": {
         "node": ">=6.0.0"
     },
-    "description": "Manage listings on backpack.tf",
-    "main": "index.js",
+    "scripts": {
+        "lint": "eslint ./"
+    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/Nicklason/node-bptf-listings.git"
