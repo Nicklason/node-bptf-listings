@@ -9,6 +9,8 @@ const EventEmitter = require('events').EventEmitter;
 
 module.exports = Listings;
 
+Listings.EFailureReason = require('./resources/EFailureReason.js');
+
 /**
  * Creates a new instance of bptf-listings
  * @class
