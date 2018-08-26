@@ -77,12 +77,9 @@ Listings.prototype.init = function (callback) {
     });
 };
 
-Listings.prototype.wait = function (clear) {
-    if (clear == false) {
-        clearTimeout(this.waitTimer);
-    } else {
-        this.waitTimer = setTimeout(Listings.prototype.processActions.bind(this), this.waitTime);
-    }
+Listings.prototype.wait = function () {
+    clearTimeout(this.waitTimer);
+    this.waitTimer = setTimeout(Listings.prototype.processActions.bind(this), this.waitTime);
 };
 
 Listings.prototype.action = function (type, action) {
