@@ -84,16 +84,39 @@ Listings.prototype.wait = function () {
     this.waitTimer = setTimeout(Listings.prototype.processActions.bind(this), this.waitTime);
 };
 
-Listings.prototype.action = function (type, action) {
-    if (type == 'remove') {
-        const match = this.actions[type].some((id) => id == action);
-        if (match) {
-            return;
+Listings.prototype.action = function (type, action, wait=true) {
+    const prevLength = this.actions[type].length;
+
+    if (Array.isArray(action)) {
+        if (type == 'remove') {
+            for (let i = action.length; i--;) {
+                const match = this.actions[type].some((id) => id == action[i]);
+                if (match) {
+                    action.splice(i, 1);
+                }
+            }
         }
+
+        this.actions[type] = this.actions[type].concat(action);
+    } else {
+        if (type == 'remove') {
+            const match = this.actions[type].some((id) => id == action);
+            if (match) {
+                return;
+            }
+        }
+
+        this.actions[type].push(action);
     }
 
-    this.actions[type].push(action);
-    this.wait();
+    const doneSomething = prevLength !== this.actions[type].length;
+    if (doneSomething) {
+        this.emit('actions', this.actions.create, this.actions.remove);
+
+        if (wait) {
+            this.wait();
+        }
+    }
 };
 
 Listings.prototype.startTimers = function () {
