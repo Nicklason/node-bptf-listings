@@ -14,10 +14,7 @@
         "type": "git",
         "url": "git+https://github.com/Nicklason/node-bptf-listings.git"
     },
-    "author": {
-        "name": "Nicklas Marc Pedersen",
-        "url": "https://nicklas.io"
-    },
+    "author": "Nicklas Marc Pedersen",
     "license": "MIT",
     "bugs": {
         "url": "https://github.com/Nicklason/node-bptf-listings/issues"
