@@ -62,3 +62,7 @@ typings/
 
 # Local testing environment
 local/
+
+# dev environment
+nodemon.json
+ecosystem.json
