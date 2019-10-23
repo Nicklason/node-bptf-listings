@@ -2,6 +2,7 @@ const async = require('async');
 const SteamID = require('steamid');
 const request = require('@nicklason/request-retry');
 const TF2SKU = require('tf2-sku');
+const isObject = require('isobject');
 
 const inherits = require('util').inherits;
 const EventEmitter = require('events').EventEmitter;
@@ -132,40 +133,140 @@ class ListingManager {
         });
     }
 
-    createListings (listings) {
+    /**
+     * Searches for one specific listing by sku or assetid
+     * @param {String|Number} search sku or assetid
+     * @param {Number} intent 0 for buy, 1 for sell
+     * @param {Boolean} [byItem=false] true if you want to only search by sku, false if you search for a specific listing (sku or assetid)
+     * @return {Listing} Returns matching listing
+     */
+    findListing (search, intent, byItem = false) {
+        const match = this.listings.find((listing) => {
+            if (listing.intent != intent) {
+                return false;
+            }
+
+            if (byItem === true || intent == 0) {
+                return listing.getSKU() === search;
+            } else {
+                return listing.item.id == search;
+            }
+        });
+
+        return match === undefined ? null : match;
+    }
+
+    /**
+     * Finds all listings that match sku
+     * @param {String} sku
+     * @return {Array<Listing>} Returns matching listings
+     */
+    findListings (sku) {
+        return this.listings.filter((listing) => {
+            return listing.getSKU() === sku;
+        });
+    }
+
+    createListings (listings, force = false) {
         if (!this.ready) {
             throw new Error('Module has not been successfully initialized');
         }
+
+        // TODO: Check if we are already making similar listings
 
         const formattet = listings.map((value) => this._formatListing(value)).filter((listing) => listing !== null);
 
+        let doneSomething = formattet.length !== 0;
+
+        if (force === true) {
+            const remove = [];
+
+            formattet.forEach((listing) => {
+                const match = this.findListing(listing.intent == 1 ? listing.id : listing.sku);
+                if (match !== null) {
+                    remove.push(match.id);
+                }
+            });
+
+            if (remove.length !== 0) {
+                doneSomething = true;
+                this.actions.remove = this.actions.remove.concat(remove);
+            }
+        }
+
         if (formattet.length !== 0) {
             this.actions.create = this.actions.create.concat(formattet);
+        }
+
+        if (doneSomething) {
             this.emit('actions', this.actions);
         }
     }
 
-    createListing (listing) {
+    createListing (listing, force = false) {
         if (!this.ready) {
             throw new Error('Module has not been successfully initialized');
         }
 
+        // TODO: Check if we are already making a similar listing
+
         const formattet = this._formatListing(listing);
+
+        let doneSomething = formattet !== null;
+
+        if (force === true) {
+            const match = this.findListing(listing.intent == 1 ? listing.id : listing.sku);
+            if (match !== null) {
+                doneSomething = true;
+                match.remove();
+            }
+        }
 
         if (formattet !== null) {
             this.actions.create.push(formattet);
+        }
+
+        if (doneSomething) {
             this.emit('actions', this.actions);
         }
     }
 
+    removeListings (listings) {
+        if (!this.ready) {
+            throw new Error('Module has not been successfully initialized');
+        }
+
+        const formattet = listings.map((value) => !isObject(value) ? value : value.id);
+
+        if (formattet.length !== 0) {
+            this.actions.remove = this.actions.remove.concat(formattet);
+            this.emit('actions', this.actions);
+        }
+    }
+
+    removeListing (listing) {
+        if (!this.ready) {
+            throw new Error('Module has not been successfully initialized');
+        }
+
+        if (!isObject(listing)) {
+            this.actions.remove.push(listing);
+        } else {
+            this.actions.remove.push(listing.id);
+        }
+
+        this.emit('actions', this.actions);
+    }
+
     _formatListing (listing) {
-        if (listing.intent === 0) {
+        if (listing.intent == 0) {
             const item = this._formatItem(listing.sku);
             if (item === null) {
                 return null;
             }
             listing.item = item;
-            delete listing.sku;
+
+            // Keep sku for later
         }
 
         return listing;
