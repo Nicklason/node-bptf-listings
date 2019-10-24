@@ -3,6 +3,7 @@ const SteamID = require('steamid');
 const request = require('@nicklason/request-retry');
 const TF2SKU = require('tf2-sku');
 const isObject = require('isobject');
+const moment = require('moment');
 
 const inherits = require('util').inherits;
 const EventEmitter = require('events').EventEmitter;
@@ -100,6 +101,31 @@ class ListingManager {
             this.emit('heatbeat', body.bumped);
 
             return callback(null, body);
+        });
+    }
+
+    updateInventory (callback) {
+        const options = {
+            method: 'GET',
+            url: `https://backpack.tf/_inventory/${this.steamid64}`,
+            gzip: true,
+            json: true
+        };
+
+        request(options, (err, response, body) => {
+            if (err) {
+                return callback(err);
+            }
+
+            if (body.status.id == -1) {
+                return callback(new Error(body.status.text + ' (' + body.status.extra + ')'));
+            }
+
+            // TODO: Retry updating the inventory if told so
+
+            // TODO: Make sure that the inventory has actually updated (check when the inventory was last updated)
+
+            this.emit('inventory', moment.unix(body.time.timestamp));
         });
     }
 
@@ -291,7 +317,7 @@ class ListingManager {
                 // There are still things to do
                 this._startTimeout();
             } else {
-                // Action queues are empty, get listings
+                // Queues are empty, get listings
                 this.getListings(() => {
                     this._processingActions = false;
                     this._startTimeout();
