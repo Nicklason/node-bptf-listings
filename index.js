@@ -18,8 +18,11 @@ class ListingManager {
         this.token = options.token;
         this.steamid = new SteamID(options.steamid);
 
+        // Time to wait before sending request after enqueing action
         this.waitTime = options.waitTime || 1000;
+        // Amount of listings to create at once
         this.batchSize = options.batchSize || 50;
+    
         this.cap = null;
         this.promotes = null;
 
@@ -273,30 +276,84 @@ class ListingManager {
 
         this._processingActions = true;
 
-        async.series([
-            (callback) => {
+        async.series({
+            delete: (callback) => {
                 this._delete(callback);
             },
-            (callback) => {
+            create: (callback) => {
                 this._create(callback);
             }
-        ], (err) => {
+        }, (err, result) => {
             this._processingActions = false;
+
+            if (!err) {
+                // dd
+            }
+
             // TODO: Error handling
 
             if (this.actions.remove.length !== 0 || this.actions.create.length !== 0) {
                 // There are still things to do
-                this._processActions();
+                setImmediate(ListingManager.prototype._processActions.bind(this));
             }
         });
     }
 
     _create (callback) {
-        // const batch = this.actions.create.slice(0, this.batchSize);
+        if (this.actions.create.length === 0) {
+            return callback(null);
+        }
 
-        // TODO: Process batch
+        const batch = this.actions.create.slice(0, this.batchSize);
 
-        callback(null);
+        const options = {
+            method: 'POST',
+            url: 'https://backpack.tf/api/classifieds/list/v1',
+            qs: {
+                token: this.token
+            },
+            body: {
+                listings: batch
+            },
+            json: true,
+            gzip: true
+        };
+
+        request(options, (err, response, body) => {
+            if (err) {
+                return callback(err);
+            }
+
+            this.actions.create = this.actions.create.filter((listing) => {
+                const index = batch.findIndex((v) => v.sku === listing.sku);
+
+                if (index !== -1) {
+                    batch.splice(index, 1);
+                }
+
+                return index === -1;
+            });
+
+            this.emit('actions', this.actions);
+
+            for (const name in body.listings) {
+                if (!body.listings.hasOwnProperty(name)) {
+                    continue;
+                }
+
+                const listing = body.listings[name];
+                if (listing.hasOwnProperty('error')) {
+                    this.emit('error', 'create', name === '' ? null : name, listing.error);
+                    if (listing.error == 6) {
+                        this.emit('retry', name, listing.retry);
+                    }
+                } else if (listing.created !== undefined && !!listing.created) {
+                    this.emit('created', name);
+                }
+            }
+
+            return callback(null, body);
+        });
     }
 
     _delete (callback) {
@@ -324,11 +381,9 @@ class ListingManager {
                 return callback(err);
             }
 
-            if (body.deleted !== 0) {
-                // Filter out listings that we just deleted
-                this.actions.remove = this.actions.remove.filter((id) => remove.indexOf(id) !== -1);
-                this.emit('actions', this.actions);
-            }
+            // Filter out listings that we just deleted
+            this.actions.remove = this.actions.remove.filter((id) => remove.indexOf(id) === -1);
+            this.emit('actions', this.actions);
 
             let errors = body.errors;
 
