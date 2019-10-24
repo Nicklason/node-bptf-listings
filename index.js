@@ -283,15 +283,23 @@ class ListingManager {
         }
     }
 
-    startTimers () {
+    _startTimers () {
         this._heartbeatInterval = setInterval(ListingManager.prototype._updateListings.bind(this, () => {}), 90000);
         this._inventoryInterval = setInterval(ListingManager.prototype.updateInventory.bind(this), 120000);
     }
 
-    stopTimers () {
+    stop () {
+        // Stop timers
         clearTimeout(this._timeout);
         clearInterval(this._heartbeatInterval);
         clearInterval(this._inventoryInterval);
+
+        // Reset values
+        this.ready = false;
+        this.listings = [];
+        this.cap = null;
+        this.promotes = null;
+        this.actions = { create: [], remove: [] };
     }
 
     _startTimeout () {
