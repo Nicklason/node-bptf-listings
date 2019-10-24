@@ -57,6 +57,10 @@ class Listing {
         return SKU.fromString(SKU.fromObject(item));
     }
 
+    remove () {
+        this._manager.removeListing(this.id);
+    }
+
     _parseAttributes () {
         const attributes = {};
 
