@@ -182,7 +182,7 @@ class ListingManager {
             const remove = [];
 
             formattet.forEach((listing) => {
-                const match = this.findListing(listing.intent == 1 ? listing.id : listing.sku);
+                const match = this.findListing(listing.intent == 1 ? listing.id : listing.sku, listing.intent);
                 if (match !== null) {
                     remove.push(match.id);
                 }
@@ -215,7 +215,7 @@ class ListingManager {
         let doneSomething = formattet !== null;
 
         if (force === true) {
-            const match = this.findListing(listing.intent == 1 ? listing.id : listing.sku);
+            const match = this.findListing(listing.intent == 1 ? listing.id : listing.sku, listing.intent);
             if (match !== null) {
                 doneSomething = true;
                 match.remove();
