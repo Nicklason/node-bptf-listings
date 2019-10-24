@@ -270,7 +270,7 @@ class ListingManager {
     }
 
     _processActions () {
-        if (this._processingActions === true) {
+        if (this._processingActions === true || (this.actions.remove.length === 0 && this.actions.create.length === 0)) {
             return;
         }
 
@@ -283,18 +283,19 @@ class ListingManager {
             create: (callback) => {
                 this._create(callback);
             }
-        }, (err, result) => {
-            this._processingActions = false;
-
-            if (!err) {
-                // dd
-            }
-
+        }, (err) => {
             // TODO: Error handling
 
             if (this.actions.remove.length !== 0 || this.actions.create.length !== 0) {
+                this._processingActions = false;
                 // There are still things to do
-                setImmediate(ListingManager.prototype._processActions.bind(this));
+                this._startTimeout();
+            } else {
+                // Action queues are empty, get listings
+                this.getListings(() => {
+                    this._processingActions = false;
+                    this._startTimeout();
+                });
             }
         });
     }
