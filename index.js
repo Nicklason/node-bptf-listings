@@ -57,19 +57,12 @@ class ListingManager {
             return;
         }
 
-        async.series([
-            (callback) => {
-                this.sendHeartbeat(callback);
-            },
-            (callback) => {
-                this.getListings(callback);
-            }
-        ], (err) => {
+        this._updateListings((err) => {
             if (err) {
                 return callback(err);
             }
 
-            // this._startUpdater();
+            this._startTimers();
 
             this.ready = true;
             this.emit('ready');
@@ -290,9 +283,33 @@ class ListingManager {
         }
     }
 
+    startTimers () {
+        this._heartbeatInterval = setInterval(ListingManager.prototype._updateListings.bind(this, () => {}), 90000);
+        this._inventoryInterval = setInterval(ListingManager.prototype.updateInventory.bind(this), 120000);
+    }
+
+    stopTimers () {
+        clearTimeout(this._timeout);
+        clearInterval(this._heartbeatInterval);
+        clearInterval(this._inventoryInterval);
+    }
+
     _startTimeout () {
         clearTimeout(this._timeout);
         this._timeout = setTimeout(ListingManager.prototype._processActions.bind(this), this.waitTime);
+    }
+
+    _updateListings (callback) {
+        async.series([
+            (callback) => {
+                this.sendHeartbeat(callback);
+            },
+            (callback) => {
+                this.getListings(callback);
+            }
+        ], (err) => {
+            return callback(err);
+        });
     }
 
     _processActions () {
