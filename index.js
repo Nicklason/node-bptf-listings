@@ -290,10 +290,57 @@ class ListingManager {
         // const batch = this.actions.create.slice(0, this.batchSize);
 
         // TODO: Process batch
+
+        callback(null);
     }
 
-    _remove (callback) {
-        // Remove all listings in actions array
+    _delete (callback) {
+        if (this.actions.remove.length === 0) {
+            return callback(null);
+        }
+
+        const remove = this.actions.remove.concat();
+
+        const options = {
+            method: 'DELETE',
+            url: 'https://backpack.tf/api/classifieds/delete/v1',
+            qs: {
+                token: this.token
+            },
+            body: {
+                listing_ids: remove
+            },
+            json: true,
+            gzip: true
+        };
+
+        request(options, function (err, response, body) {
+            if (err) {
+                return callback(err);
+            }
+
+            if (body.deleted !== 0) {
+                // Filter out listings that we just deleted
+                this.actions.remove = this.actions.remove.filter((id) => remove.indexOf(id) !== -1);
+            }
+
+            let errors = body.errors;
+
+            remove.forEach((id) => {
+                const index = errors.findIndex((error) => error.listing_id == id);
+
+                if (index !== -1) {
+                    const match = errors[index];
+                    // Remove id from errors list
+                    errors = errors.splice(index, 1);
+                    this.emit('error', 'delete', match.listing_id, match.message);
+                } else {
+                    this.emit('removed', id);
+                }
+            });
+
+            return callback(null, body);
+        });
     }
 
     _formatListing (listing) {
