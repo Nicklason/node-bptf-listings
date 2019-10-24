@@ -57,6 +57,23 @@ class Listing {
         return SKU.fromString(SKU.fromObject(item));
     }
 
+    update (properties) {
+        const listing = {
+            sku: this.getSKU(),
+            intent: this.intent
+        };
+
+        ['currencies', 'details', 'offers', 'buyout'].forEach((property) => {
+            if (properties[property] === undefined) {
+                listing[property] = this[property];
+            } else {
+                listing[property] = properties[property];
+            }
+        });
+
+        this._manager.createListing(listing, true);
+    }
+
     remove () {
         this._manager.removeListing(this.id);
     }
