@@ -19,6 +19,7 @@ class ListingManager {
         this.steamid = new SteamID(options.steamid);
 
         this.waitTime = options.waitTime || 1000;
+        this.batchSize = options.batchSize || 50;
         this.cap = null;
         this.promotes = null;
 
@@ -172,11 +173,7 @@ class ListingManager {
             throw new Error('Module has not been successfully initialized');
         }
 
-        // TODO: Check if we are already making similar listings
-
         const formattet = listings.map((value) => this._formatListing(value)).filter((listing) => listing !== null);
-
-        let doneSomething = formattet.length !== 0;
 
         if (force === true) {
             const remove = [];
@@ -188,19 +185,10 @@ class ListingManager {
                 }
             });
 
-            if (remove.length !== 0) {
-                doneSomething = true;
-                this.actions.remove = this.actions.remove.concat(remove);
-            }
+            this._action('remove', remove);
         }
 
-        if (formattet.length !== 0) {
-            this.actions.create = this.actions.create.concat(formattet);
-        }
-
-        if (doneSomething) {
-            this.emit('actions', this.actions);
-        }
+        this._action('create', formattet);
     }
 
     createListing (listing, force = false) {
@@ -208,26 +196,17 @@ class ListingManager {
             throw new Error('Module has not been successfully initialized');
         }
 
-        // TODO: Check if we are already making a similar listing
-
         const formattet = this._formatListing(listing);
-
-        let doneSomething = formattet !== null;
 
         if (force === true) {
             const match = this.findListing(listing.intent == 1 ? listing.id : listing.sku, listing.intent);
             if (match !== null) {
-                doneSomething = true;
                 match.remove();
             }
         }
 
         if (formattet !== null) {
-            this.actions.create.push(formattet);
-        }
-
-        if (doneSomething) {
-            this.emit('actions', this.actions);
+            this._action('create', formattet);
         }
     }
 
@@ -238,10 +217,7 @@ class ListingManager {
 
         const formattet = listings.map((value) => !isObject(value) ? value : value.id);
 
-        if (formattet.length !== 0) {
-            this.actions.remove = this.actions.remove.concat(formattet);
-            this.emit('actions', this.actions);
-        }
+        this._action('remove', formattet);
     }
 
     removeListing (listing) {
@@ -250,12 +226,45 @@ class ListingManager {
         }
 
         if (!isObject(listing)) {
-            this.actions.remove.push(listing);
+            this._action('remove', listing);
         } else {
-            this.actions.remove.push(listing.id);
+            this._action('remove', listing.id);
+        }
+    }
+
+    _action (type, value) {
+        const array = Array.isArray(value) ? value : [value];
+
+        if (array.length === 0) {
+            return;
         }
 
-        this.emit('actions', this.actions);
+        let doneSomething = false;
+
+        if (type === 'remove') {
+            const noMatch = array.filter((id) => this.actions.create.indexOf(id) === -1);
+            if (noMatch.length !== 0) {
+                this.actions[type] = this.actions[type].concat(noMatch);
+                doneSomething = true;
+            }
+        } else if (type === 'create') {
+            // TODO: Check if we are already making similar listings
+
+            this.actions[type] = this.actions[type].concat(array);
+            doneSomething = true;
+        }
+
+        if (doneSomething) {
+            this.emit('actions', this.actions);
+
+            // TODO: Start timeout
+        }
+    }
+
+    _create (callback) {
+        // const batch = this.actions.create.slice(0, this.batchSize);
+
+        // TODO: Process batch
     }
 
     _formatListing (listing) {
