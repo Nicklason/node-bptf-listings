@@ -283,6 +283,11 @@ class ListingManager {
         ], (err) => {
             this._processingActions = false;
             // TODO: Error handling
+
+            if (this.actions.remove.length !== 0 || this.actions.create.length !== 0) {
+                // There are still things to do
+                this._processActions();
+            }
         });
     }
 
@@ -314,7 +319,7 @@ class ListingManager {
             gzip: true
         };
 
-        request(options, function (err, response, body) {
+        request(options, (err, response, body) => {
             if (err) {
                 return callback(err);
             }
@@ -322,6 +327,7 @@ class ListingManager {
             if (body.deleted !== 0) {
                 // Filter out listings that we just deleted
                 this.actions.remove = this.actions.remove.filter((id) => remove.indexOf(id) !== -1);
+                this.emit('actions', this.actions);
             }
 
             let errors = body.errors;
