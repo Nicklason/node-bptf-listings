@@ -19,10 +19,10 @@ class ListingManager {
         this.steamid = new SteamID(options.steamid);
 
         // Time to wait before sending request after enqueing action
-        this.waitTime = options.waitTime || 1000;
+        this.waitTime = options.waitTime || 100;
         // Amount of listings to create at once
         this.batchSize = options.batchSize || 50;
-    
+
         this.cap = null;
         this.promotes = null;
 
