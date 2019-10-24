@@ -257,14 +257,43 @@ class ListingManager {
         if (doneSomething) {
             this.emit('actions', this.actions);
 
-            // TODO: Start timeout
+            this._startTimeout();
         }
+    }
+
+    _startTimeout () {
+        clearTimeout(this._timeout);
+        this._timeout = setTimeout(ListingManager.prototype._processActions.bind(this), this.waitTime);
+    }
+
+    _processActions () {
+        if (this._processingActions === true) {
+            return;
+        }
+
+        this._processingActions = true;
+
+        async.series([
+            (callback) => {
+                this._delete(callback);
+            },
+            (callback) => {
+                this._create(callback);
+            }
+        ], (err) => {
+            this._processingActions = false;
+            // TODO: Error handling
+        });
     }
 
     _create (callback) {
         // const batch = this.actions.create.slice(0, this.batchSize);
 
         // TODO: Process batch
+    }
+
+    _remove (callback) {
+        // Remove all listings in actions array
     }
 
     _formatListing (listing) {
