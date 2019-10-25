@@ -10,6 +10,8 @@ const EventEmitter = require('events').EventEmitter;
 
 const Listing = require('./classes/listing');
 
+const EFailiureReason = require('./resources/EFailureReason');
+
 class ListingManager {
     constructor (options) {
         options = options || {};
@@ -504,3 +506,6 @@ class ListingManager {
 inherits(ListingManager, EventEmitter);
 
 module.exports = ListingManager;
+module.exports.Listing = Listing;
+
+module.exports.EFailiureReason = EFailiureReason;
