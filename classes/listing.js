@@ -3,9 +3,22 @@ const Currencies = require('tf2-currencies');
 const moment = require('moment');
 const SKU = require('tf2-sku');
 
-// TODO: Add functions for removing / updating this listing
-
 class Listing {
+    /**
+     * Creates a new instance of the listing class
+     * @param {Object} listing A backpack.tf listing object
+     * @param {String} listing.id
+     * @param {Number} listing.intent
+     * @param {Object} listing.item
+     * @param {Number} listing.appid
+     * @param {Object} listing.currencies
+     * @param {Number} listing.offers
+     * @param {Number} listing.buyout
+     * @param {String} listing.details
+     * @param {Number} listing.created
+     * @param {Number} listing.bump
+     * @param {Object} manager Instance of bptf-listings
+     */
     constructor (listing, manager) {
         this.id = listing.id;
         this.steamid = new SteamID(listing.steamid);

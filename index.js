@@ -13,6 +13,15 @@ const Listing = require('./classes/listing');
 const EFailiureReason = require('./resources/EFailureReason');
 
 class ListingManager {
+    /**
+     * Creates a new instance of the listing manager
+     * @param {Object} options
+     * @param {String} options.token The access token of the account being managed
+     * @param {String} options.steamid The steamid of the account being managed
+     * @param {Number} [options.waitTime=100] Time to wait before processing the queues
+     * @param {Number} [options.batchSize=50]
+     * @param {Object} options.schema Schema from the tf2-schema module (schemaManager.schema)
+     */
     constructor (options) {
         options = options || {};
 
