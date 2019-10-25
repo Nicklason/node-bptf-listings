@@ -57,6 +57,14 @@ class Listing {
         return SKU.fromString(SKU.fromObject(item));
     }
 
+    getName () {
+        if (this.appid !== 440) {
+            return null;
+        }
+
+        return this._manager.schema.getName(this.getItem());
+    }
+
     update (properties) {
         const listing = {
             sku: this.getSKU(),
