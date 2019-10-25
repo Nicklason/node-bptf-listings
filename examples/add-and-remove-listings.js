@@ -44,6 +44,12 @@ listingManager.createListing({
     }
 }, true);
 
+// Removes a single listing
+listingManager.removeListing('listing id');
+
+// Removes multible listings
+listingManager.removeListings(['listing id', 'listing id']);
+
 // this event is emitted after the listings has been fetched from backpack.tf
 listingManager.on('listings', function (listings) {
     console.log('We have ' + listings.length + ' listing(s) on backpack.tf');
