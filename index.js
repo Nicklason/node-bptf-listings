@@ -72,6 +72,11 @@ class ListingManager {
         });
     }
 
+    /**
+     * Sends a heartbeat to backpack.tf.
+     * @description Bumps listings and gives you lightning icon on listings if you have set a tradeofferurl in your settings (https://backpack.tf/settings)
+     * @param {Function} callback
+     */
     sendHeartbeat (callback) {
         if (!this.token) {
             callback(new Error('No token set (yet)'));
@@ -99,6 +104,10 @@ class ListingManager {
         });
     }
 
+    /**
+     * Updates your inventory on backpack.tf
+     * @param {Function} callback
+     */
     updateInventory (callback) {
         const options = {
             method: 'GET',
@@ -106,6 +115,9 @@ class ListingManager {
             gzip: true,
             json: true
         };
+
+        // TODO: Keep a list of steamids that the user has, if we try and make a sell order and the assetid is not there, then wait until it is
+        // This will mean that we need a way to overwrite enqueued listings
 
         request(options, (err, response, body) => {
             if (err) {
@@ -124,6 +136,10 @@ class ListingManager {
         });
     }
 
+    /**
+     * Gets the listings that you have on backpack.tf
+     * @param {Function} callback
+     */
     getListings (callback) {
         if (!this.token) {
             callback(new Error('No token set (yet)'));
@@ -192,6 +208,11 @@ class ListingManager {
         });
     }
 
+    /**
+     * Enqueues a list of listings to be made
+     * @param {Array<Object>} listings
+     * @param {Boolean} force true to update existing listing if there is one
+     */
     createListings (listings, force = false) {
         if (!this.ready) {
             throw new Error('Module has not been successfully initialized');
@@ -215,6 +236,11 @@ class ListingManager {
         this._action('create', formattet);
     }
 
+    /**
+     * Enqueues a list of listings to be made
+     * @param {Object} listing
+     * @param {Boolean} force true to update existing listing if there is one
+     */
     createListing (listing, force = false) {
         if (!this.ready) {
             throw new Error('Module has not been successfully initialized');
@@ -234,6 +260,10 @@ class ListingManager {
         }
     }
 
+    /**
+     * Enqueus a list of listings or listing ids to be removed
+     * @param {Array<Object>|Array<String>} listings
+     */
     removeListings (listings) {
         if (!this.ready) {
             throw new Error('Module has not been successfully initialized');
@@ -244,6 +274,10 @@ class ListingManager {
         this._action('remove', formattet);
     }
 
+    /**
+     * Enqueus a list of listings or listing ids to be removed
+     * @param {Object|String} listing
+     */
     removeListing (listing) {
         if (!this.ready) {
             throw new Error('Module has not been successfully initialized');
@@ -256,6 +290,11 @@ class ListingManager {
         }
     }
 
+    /**
+     * Function used to enqueue jobs
+     * @param {String} type
+     * @param {Array<Object>|Array<String>|Object|String} value
+     */
     _action (type, value) {
         const array = Array.isArray(value) ? value : [value];
 
@@ -272,7 +311,7 @@ class ListingManager {
                 doneSomething = true;
             }
         } else if (type === 'create') {
-            // TODO: Check if we are already making similar listings
+            // TODO: Check if we are already making similar listings and overwrite them
 
             this.actions[type] = this.actions[type].concat(array);
             doneSomething = true;
@@ -285,11 +324,17 @@ class ListingManager {
         }
     }
 
+    /**
+     * Starts heartbeat and inventory timers
+     */
     _startTimers () {
         this._heartbeatInterval = setInterval(ListingManager.prototype._updateListings.bind(this, () => {}), 90000);
         this._inventoryInterval = setInterval(ListingManager.prototype.updateInventory.bind(this), 120000);
     }
 
+    /**
+     * Stops all timers and timeouts and clear values to default
+     */
     stop () {
         // Stop timers
         clearTimeout(this._timeout);
@@ -304,11 +349,18 @@ class ListingManager {
         this.actions = { create: [], remove: [] };
     }
 
+    /**
+     * Starts timeout used to process actions
+     */
     _startTimeout () {
         clearTimeout(this._timeout);
         this._timeout = setTimeout(ListingManager.prototype._processActions.bind(this), this.waitTime);
     }
 
+    /**
+     * Sends heartbeat and gets listings
+     * @param {Function} callback
+     */
     _updateListings (callback) {
         async.series([
             (callback) => {
@@ -322,6 +374,9 @@ class ListingManager {
         });
     }
 
+    /**
+     * Processes action queues
+     */
     _processActions () {
         if (this._processingActions === true || (this.actions.remove.length === 0 && this.actions.create.length === 0)) {
             return;
@@ -351,9 +406,14 @@ class ListingManager {
         });
     }
 
+    /**
+     * Creates a batch of listings from the queue
+     * @param {Function} callback
+     */
     _create (callback) {
         if (this.actions.create.length === 0) {
-            return callback(null);
+            callback(null);
+            return;
         }
 
         const batch = this.actions.create.slice(0, this.batchSize);
@@ -408,9 +468,14 @@ class ListingManager {
         });
     }
 
+    /**
+     * Removes all listings in the remove queue
+     * @param {Function} callback
+     */
     _delete (callback) {
         if (this.actions.remove.length === 0) {
-            return callback(null);
+            callback(null);
+            return;
         }
 
         const remove = this.actions.remove.concat();
@@ -456,6 +521,11 @@ class ListingManager {
         });
     }
 
+    /**
+     * Formats a listing so that it is ready to be sent to backpack.tf
+     * @param {Object} listing
+     * @return {Object} listing if formattet correctly, null if not
+     */
     _formatListing (listing) {
         if (listing.intent == 0) {
             if (listing.sku === undefined) {
@@ -474,6 +544,11 @@ class ListingManager {
         return listing;
     }
 
+    /**
+     * Converts an sku into an item object that backpack.tf understands
+     * @param {String} sku
+     * @return {Object} Returns the formattet item, null if the item does not exist
+     */
     _formatItem (sku) {
         const item = TF2SKU.fromString(sku);
 

@@ -22,6 +22,10 @@ class Listing {
         this._manager = manager;
     }
 
+    /**
+     * Gets the sku of the item in the listing
+     * @return {String}
+     */
     getSKU () {
         if (this.appid !== 440) {
             return null;
@@ -30,6 +34,10 @@ class Listing {
         return SKU.fromObject(this.getItem());
     }
 
+    /**
+     * Returns the item in the listings
+     * @return {Object}
+     */
     getItem () {
         if (this.appid !== 440) {
             return this.item;
@@ -57,6 +65,10 @@ class Listing {
         return SKU.fromString(SKU.fromObject(item));
     }
 
+    /**
+     * Returns the name of the item in the listing
+     * @return {String}
+     */
     getName () {
         if (this.appid !== 440) {
             return null;
@@ -65,6 +77,14 @@ class Listing {
         return this._manager.schema.getName(this.getItem());
     }
 
+    /**
+     * Changes specific properties and adds the job to the queue
+     * @param {Object} properties
+     * @param {Object} [properties.currencies]
+     * @param {String} [properties.details]
+     * @param {Boolean} [properties.offers]
+     * @param {Boolean} [properties.buyout]
+     */
     update (properties) {
         const listing = {
             sku: this.getSKU(),
@@ -82,10 +102,17 @@ class Listing {
         this._manager.createListing(listing, true);
     }
 
+    /**
+     * Enqueues the listing to be removed
+     */
     remove () {
         this._manager.removeListing(this.id);
     }
 
+    /**
+     * Parses attributes
+     * @return {Object}
+     */
     _parseAttributes () {
         const attributes = {};
 
