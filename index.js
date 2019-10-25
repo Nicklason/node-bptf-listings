@@ -458,6 +458,10 @@ class ListingManager {
 
     _formatListing (listing) {
         if (listing.intent == 0) {
+            if (listing.sku === undefined) {
+                return null;
+            }
+
             const item = this._formatItem(listing.sku);
             if (item === null) {
                 return null;
