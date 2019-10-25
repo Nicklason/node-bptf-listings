@@ -334,9 +334,7 @@ class ListingManager {
             create: (callback) => {
                 this._create(callback);
             }
-        }, (err) => {
-            // TODO: Error handling
-
+        }, () => {
             if (this.actions.remove.length !== 0 || this.actions.create.length !== 0) {
                 this._processingActions = false;
                 // There are still things to do
