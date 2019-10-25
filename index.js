@@ -73,11 +73,17 @@ class ListingManager {
                 return callback(err);
             }
 
-            this._startTimers();
+            this.updateInventory(() => {
+                this._startTimers();
 
-            this.ready = true;
-            this.emit('ready');
-            return callback(null);
+                this.ready = true;
+                this.emit('ready');
+
+                // Emit listings after initializing
+                this.emit('listings', this.listings);
+
+                return callback(null);
+            });
         });
     }
 
@@ -142,6 +148,8 @@ class ListingManager {
             // TODO: Make sure that the inventory has actually updated (check when the inventory was last updated)
 
             this.emit('inventory', moment.unix(body.time.timestamp));
+
+            return callback(null);
         });
     }
 
@@ -177,7 +185,9 @@ class ListingManager {
             this.promotes = body.promotes_remaining;
             this.listings = body.listings.map((listing) => new Listing(listing, this));
 
-            this.emit('listings', this.listings);
+            if (this.ready) {
+                this.emit('listings', this.listings);
+            }
 
             return callback(null, body);
         });
