@@ -7,7 +7,8 @@ const schemaManager = new Schema({ apiKey: 'your steam api key' });
 
 const listingManager = new BptfListings({
     token: 'your bptf user token (https://backpack.tf/connections)',
-    steamid: 'the steamid of the account you got the user token from'
+    steamid: 'the steamid of the account you got the user token from',
+    batchSize: 10 // only create 10 listings at a time
 });
 
 async.series([
