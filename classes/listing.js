@@ -100,9 +100,14 @@ class Listing {
      */
     update (properties) {
         const listing = {
-            sku: this.getSKU(),
             intent: this.intent
         };
+
+        if (this.intent === 0) {
+            listing.sku = this.getSKU();
+        } else {
+            listing.id = this.item.id;
+        }
 
         ['currencies', 'details', 'offers', 'buyout'].forEach((property) => {
             if (properties[property] === undefined) {
