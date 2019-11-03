@@ -102,7 +102,8 @@ class ListingManager {
             method: 'POST',
             url: 'https://backpack.tf/api/aux/heartbeat/v1',
             qs: {
-                token: this.token
+                token: this.token,
+                automatic: 'all'
             },
             json: true,
             gzip: true
