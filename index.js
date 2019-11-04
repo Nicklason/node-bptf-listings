@@ -245,13 +245,13 @@ class ListingManager {
             throw new Error('Module has not been successfully initialized');
         }
 
-        const formattet = listings.map((value) => this._formatListing(value)).filter((listing) => listing !== null);
+        const formattetArr = listings.map((value) => this._formatListing(value)).filter((formattet) => formattet !== null);
 
         if (force === true) {
             const remove = [];
 
-            formattet.forEach((listing) => {
-                const match = this.findListing(listing.intent == 1 ? listing.id : listing.sku, listing.intent);
+            formattetArr.forEach((formattet) => {
+                const match = this.findListing(formattet.intent == 1 ? formattet.id : formattet.sku, formattet.intent);
                 if (match !== null) {
                     remove.push(match.id);
                 }
@@ -260,7 +260,7 @@ class ListingManager {
             this._action('remove', remove);
         }
 
-        this._action('create', formattet);
+        this._action('create', formattetArr);
     }
 
     /**
@@ -275,14 +275,14 @@ class ListingManager {
 
         const formattet = this._formatListing(listing);
 
-        if (force === true) {
-            const match = this.findListing(listing.intent == 1 ? listing.id : listing.sku, listing.intent);
-            if (match !== null) {
-                match.remove();
-            }
-        }
-
         if (formattet !== null) {
+            if (force === true) {
+                const match = this.findListing(formattet.intent == 1 ? formattet.id : formattet.sku, formattet.intent);
+                if (match !== null) {
+                    match.remove();
+                }
+            }
+
             this._action('create', formattet);
         }
     }
@@ -338,7 +338,10 @@ class ListingManager {
                 doneSomething = true;
             }
         } else if (type === 'create') {
-            // TODO: Check if we are already making similar listings and overwrite them
+            // Check if the item is already in the queue
+            array.forEach((formattet) => {
+                this._removeEnqueued(formattet);
+            });
 
             this.actions[type] = this.actions[type].concat(array);
             doneSomething = true;
@@ -561,6 +564,30 @@ class ListingManager {
         }
 
         return listing;
+    }
+
+    /**
+     * Removes a matching enqueued listing
+     * @param {Object} listing Formattet listing
+     */
+    _removeEnqueued (listing) {
+        const index = this.actions.create.findIndex((v) => {
+            if (listing.intent !== v.intent) {
+                return false;
+            }
+
+            if (listing.intent === 0 && listing.sku === v.sku) {
+                return true;
+            } else if (listing.intent === 1 && listing.id === v.id) {
+                return true;
+            } else {
+                return false;
+            }
+        });
+
+        if (index !== -1) {
+            this.actions.create.splice(index, 1);
+        }
     }
 
     /**
