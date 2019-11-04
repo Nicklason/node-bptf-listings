@@ -238,37 +238,32 @@ class ListingManager {
     /**
      * Enqueues a list of listings to be made
      * @param {Array<Object>} listings
-     * @param {Boolean} force true to update existing listing if there is one
      */
-    createListings (listings, force = false) {
+    createListings (listings) {
         if (!this.ready) {
             throw new Error('Module has not been successfully initialized');
         }
 
         const formattetArr = listings.map((value) => this._formatListing(value)).filter((formattet) => formattet !== null);
 
-        if (force === true) {
-            const remove = [];
+        const remove = [];
 
-            formattetArr.forEach((formattet) => {
-                const match = this.findListing(formattet.intent == 1 ? formattet.id : formattet.sku, formattet.intent);
-                if (match !== null) {
-                    remove.push(match.id);
-                }
-            });
+        formattetArr.forEach((formattet) => {
+            const match = this.findListing(formattet.intent == 1 ? formattet.id : formattet.sku, formattet.intent);
+            if (match !== null) {
+                remove.push(match.id);
+            }
+        });
 
-            this._action('remove', remove);
-        }
-
+        this._action('remove', remove);
         this._action('create', formattetArr);
     }
 
     /**
      * Enqueues a list of listings to be made
      * @param {Object} listing
-     * @param {Boolean} force true to update existing listing if there is one
      */
-    createListing (listing, force = false) {
+    createListing (listing) {
         if (!this.ready) {
             throw new Error('Module has not been successfully initialized');
         }
@@ -276,11 +271,9 @@ class ListingManager {
         const formattet = this._formatListing(listing);
 
         if (formattet !== null) {
-            if (force === true) {
-                const match = this.findListing(formattet.intent == 1 ? formattet.id : formattet.sku, formattet.intent);
-                if (match !== null) {
-                    match.remove();
-                }
+            const match = this.findListing(formattet.intent == 1 ? formattet.id : formattet.sku, formattet.intent);
+            if (match !== null) {
+                match.remove();
             }
 
             this._action('create', formattet);
@@ -478,8 +471,12 @@ class ListingManager {
                 }
 
                 const listing = body.listings[identifier];
-                if (listing.hasOwnProperty('error') && listing.error === EFailiureReason.ItemNotInInventory || listing.error === '') {
-                    waitForInventory.push(identifier);
+                if (listing.hasOwnProperty('error')) {
+                    if (listing.error === EFailiureReason.ItemNotInInventory || listing.error === '') {
+                        waitForInventory.push(identifier);
+                    } else if (listing.error === EFailiureReason.RelistTimeout) {
+
+                    }
                 }
             }
 
