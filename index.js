@@ -145,7 +145,9 @@ class ListingManager {
 
             const time = moment.unix(body.time.timestamp);
 
-            if (body.fallback.available === false && (this._lastInventoryUpdate === null || time.unix() !== this._lastInventoryUpdate.unix())) {
+            if (this._lastInventoryUpdate === null) {
+                this._lastInventoryUpdate = time;
+            } else if (body.fallback.available === false && time.unix() !== this._lastInvoryUpdentate.unix()) {
                 // The inventory has updated on backpack.tf
                 this._lastInventoryUpdate = time;
 
