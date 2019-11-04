@@ -475,7 +475,9 @@ class ListingManager {
                     if (listing.error === EFailiureReason.ItemNotInInventory || listing.error === '') {
                         waitForInventory.push(identifier);
                     } else if (listing.error === EFailiureReason.RelistTimeout) {
+                        // TODO: If we get this error then we should remove the listing that is up
 
+                        // This error should be extremely rare
                     }
                 }
             }
