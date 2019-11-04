@@ -46,6 +46,8 @@ class ListingManager {
         };
 
         this.schema = options.schema || null;
+
+        this._lastInventoryUpdate = null;
     }
 
     /**
@@ -73,7 +75,7 @@ class ListingManager {
                 return callback(err);
             }
 
-            this.updateInventory(() => {
+            this._updateInventory(() => {
                 this._startTimers();
 
                 this.ready = true;
@@ -124,16 +126,13 @@ class ListingManager {
      * Updates your inventory on backpack.tf
      * @param {Function} callback
      */
-    updateInventory (callback) {
+    _updateInventory (callback) {
         const options = {
             method: 'GET',
-            url: `https://backpack.tf/_inventory/${this.steamid64}`,
+            url: `https://backpack.tf/_inventory/${this.steamid.getSteamID64()}`,
             gzip: true,
             json: true
         };
-
-        // TODO: Keep a list of steamids that the user has, if we try and make a sell order and the assetid is not there, then wait until it is
-        // This will mean that we need a way to overwrite enqueued listings
 
         request(options, (err, response, body) => {
             if (err) {
@@ -144,11 +143,17 @@ class ListingManager {
                 return callback(new Error(body.status.text + ' (' + body.status.extra + ')'));
             }
 
-            // TODO: Retry updating the inventory if told so
+            const time = moment.unix(body.time.timestamp);
 
-            // TODO: Make sure that the inventory has actually updated (check when the inventory was last updated)
+            if (body.fallback.available === false && (this._lastInventoryUpdate === null || time.unix() !== this._lastInventoryUpdate.unix())) {
+                // The inventory has updated on backpack.tf
+                this._lastInventoryUpdate = time;
 
-            this.emit('inventory', moment.unix(body.time.timestamp));
+                this.emit('inventory', this._lastInventoryUpdate);
+
+                // The inventory has been updated on backpack.tf, try and make listings
+                this._processActions();
+            }
 
             return callback(null);
         });
@@ -349,7 +354,7 @@ class ListingManager {
      */
     _startTimers () {
         this._heartbeatInterval = setInterval(ListingManager.prototype._updateListings.bind(this, () => {}), 90000);
-        this._inventoryInterval = setInterval(ListingManager.prototype.updateInventory.bind(this, () => {}), 120000);
+        this._inventoryInterval = setInterval(ListingManager.prototype._updateInventory.bind(this, () => {}), 120000);
     }
 
     /**
@@ -398,7 +403,7 @@ class ListingManager {
      * Processes action queues
      */
     _processActions () {
-        if (this._processingActions === true || (this.actions.remove.length === 0 && this.actions.create.length === 0)) {
+        if (this._processingActions === true || (this.actions.remove.length === 0 && this._listingsWaitingForInventoryCount() - this.actions.create.length === 0)) {
             return;
         }
 
@@ -411,7 +416,9 @@ class ListingManager {
             create: (callback) => {
                 this._create(callback);
             }
-        }, () => {
+        }, (result) => {
+            // TODO: Only get listings if we created or deleted listings
+
             if (this.actions.remove.length !== 0 || this.actions.create.length !== 0) {
                 this._processingActions = false;
                 // There are still things to do
@@ -436,7 +443,9 @@ class ListingManager {
             return;
         }
 
-        const batch = this.actions.create.slice(0, this.batchSize);
+        // TODO: Don't send sku and attempt time to backpack.tf
+
+        const batch = this.actions.create.filter((listing) => listing.attempt !== this._lastInventoryUpdate).slice(0, this.batchSize);
 
         const options = {
             method: 'POST',
@@ -456,7 +465,26 @@ class ListingManager {
                 return callback(err);
             }
 
+            const waitForInventory = [];
+
+            for (const identifier in body.listings) {
+                if (!body.listings.hasOwnProperty(identifier)) {
+                    continue;
+                }
+
+                const listing = body.listings[identifier];
+                if (listing.hasOwnProperty('error') && listing.error === EFailiureReason.ItemNotInInventory || listing.error === '') {
+                    waitForInventory.push(identifier);
+                }
+            }
+
             this.actions.create = this.actions.create.filter((listing) => {
+                if (listing.intent === 1 && waitForInventory.indexOf(listing.id) !== -1) {
+                    // We should wait for the inventory to update
+                    listing.attempt = this._lastInventoryUpdate;
+                    return true;
+                }
+
                 const index = batch.findIndex((v) => v.sku === listing.sku);
 
                 if (index !== -1) {
@@ -468,23 +496,7 @@ class ListingManager {
 
             this.emit('actions', this.actions);
 
-            for (const name in body.listings) {
-                if (!body.listings.hasOwnProperty(name)) {
-                    continue;
-                }
-
-                const listing = body.listings[name];
-                if (listing.hasOwnProperty('error')) {
-                    this.emit('error', 'create', name === '' ? null : name, listing.error);
-                    if (listing.error == 6) {
-                        this.emit('retry', name, listing.retry);
-                    }
-                } else if (listing.created !== undefined && !!listing.created) {
-                    this.emit('created', name);
-                }
-            }
-
-            return callback(null, body);
+            callback(null, body);
         });
     }
 
@@ -521,21 +533,6 @@ class ListingManager {
             // Filter out listings that we just deleted
             this.actions.remove = this.actions.remove.filter((id) => remove.indexOf(id) === -1);
             this.emit('actions', this.actions);
-
-            let errors = body.errors;
-
-            remove.forEach((id) => {
-                const index = errors.findIndex((error) => error.listing_id == id);
-
-                if (index !== -1) {
-                    const match = errors[index];
-                    // Remove id from errors list
-                    errors = errors.splice(index, 1);
-                    this.emit('error', 'delete', match.listing_id, match.message);
-                } else {
-                    this.emit('removed', id);
-                }
-            });
 
             return callback(null, body);
         });
@@ -599,6 +596,14 @@ class ListingManager {
         }
 
         return formattet;
+    }
+
+    /**
+     * Returns true if there are sell orders waiting for the inventory to update
+     * @return {Boolean}
+     */
+    _listingsWaitingForInventoryCount () {
+        return this.actions.create.filter((listing) => listing.intent === 1 && listing.attempt === this._lastInventoryUpdate).length;
     }
 }
 

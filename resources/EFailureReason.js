@@ -10,5 +10,18 @@ module.exports = {
     8: 'CurrenciesNotSpecified',
     9: 'CyclicCurrency',
     10: 'PriceNotSpecified',
-    11: 'UnknownIntent'
+    11: 'UnknownIntent',
+
+    OK: 0,
+    ItemNotInInventory: 1,
+    InvalidItem: 2,
+    ItemNotListable: 3,
+    ItemNotTradable: 4,
+    MarketplaceItemNotPriced: 5,
+    RelistTimeout: 6,
+    ListingCapExceeded: 7,
+    CurrenciesNotSpecified: 8,
+    CyclicCurrency: 9,
+    PriceNotSpecified: 10,
+    UnknownIntent: 11
 };
