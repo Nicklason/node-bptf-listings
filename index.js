@@ -147,7 +147,7 @@ class ListingManager {
 
             if (this._lastInventoryUpdate === null) {
                 this._lastInventoryUpdate = time;
-            } else if (body.fallback.available === false && time.unix() !== this._lastInvoryUpdentate.unix()) {
+            } else if (body.fallback.available === false && time.unix() !== this._lastInventoryUpdate.unix()) {
                 // The inventory has updated on backpack.tf
                 this._lastInventoryUpdate = time;
 
