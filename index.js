@@ -537,6 +537,10 @@ class ListingManager {
 
             // Filter out listings that we just deleted
             this.actions.remove = this.actions.remove.filter((id) => remove.indexOf(id) === -1);
+
+            // Update cached listings
+            this.listings = this.listings.filter((listing) => remove.indexOf(listing.id) === -1);
+
             this.emit('actions', this.actions);
 
             return callback(null, body);
