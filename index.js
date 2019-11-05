@@ -382,6 +382,7 @@ class ListingManager {
         this.cap = null;
         this.promotes = null;
         this.actions = { create: [], remove: [] };
+        this._lastInventoryUpdate = null;
     }
 
     /**
@@ -413,7 +414,7 @@ class ListingManager {
      * Processes action queues
      */
     _processActions () {
-        if (this._processingActions === true || (this.actions.remove.length === 0 && this._listingsWaitingForRetry() - this._listingsWaitingForInventoryCount() - this.actions.create.length === 0)) {
+        if (this._processingActions === true || (this.actions.remove.length === 0 && this._listingsWaitingForRetry() + this._listingsWaitingForInventoryCount() - this.actions.create.length === 0)) {
             return;
         }
 
