@@ -149,7 +149,9 @@ class Listing {
             } else if (attribute.defindex == 834) {
                 attributes.paintkit = attribute.value;
             } else if (attribute.defindex == 725) {
-                attributes.wear = parseFloat(attribute.value) * 5;
+                attributes.wear = parseInt(parseFloat(attribute.value) * 5);
+            } else if (attribute.defindex == 214) {
+                attributes.quality2 = 11;
             }
         }
 
