@@ -116,7 +116,7 @@ class ListingManager {
                 return callback(err);
             }
 
-            this.emit('heatbeat', body.bumped);
+            this.emit('heartbeat', body.bumped);
 
             return callback(null, body);
         });
