@@ -1,7 +1,7 @@
 const async = require('async');
 const SteamID = require('steamid');
 const request = require('@nicklason/request-retry');
-const TF2SKU = require('tf2-sku');
+const SKU = require('tf2-sku');
 const isObject = require('isobject');
 const moment = require('moment');
 
@@ -192,6 +192,18 @@ class ListingManager {
             this.cap = body.cap;
             this.promotes = body.promotes_remaining;
             this.listings = body.listings.map((listing) => new Listing(listing, this));
+
+            // Go through create queue and find listings that need retrying
+            this.actions.create.forEach((formattet) => {
+                if (formattet.retry !== undefined) {
+                    // Look for a listing that has a matching sku / id
+                    const match = this.findListing(formattet.intent == 0 ? formattet.sku : formattet.id, formattet.intent);
+                    if (match !== null) {
+                        // Found match, remove the listing and unset retry property
+                        match.remove();
+                    }
+                }
+            });
 
             if (this.ready) {
                 this.emit('listings', this.listings);
@@ -401,7 +413,7 @@ class ListingManager {
      * Processes action queues
      */
     _processActions () {
-        if (this._processingActions === true || (this.actions.remove.length === 0 && this._listingsWaitingForInventoryCount() - this.actions.create.length === 0)) {
+        if (this._processingActions === true || (this.actions.remove.length === 0 && this._listingsWaitingForRetry() - this._listingsWaitingForInventoryCount() - this.actions.create.length === 0)) {
             return;
         }
 
@@ -417,7 +429,7 @@ class ListingManager {
         }, (result) => {
             // TODO: Only get listings if we created or deleted listings
 
-            if (this.actions.remove.length !== 0 || this.actions.create.length !== 0) {
+            if (this.actions.remove.length !== 0 || this._listingsWaitingForRetry() - this.actions.create.length !== 0) {
                 this._processingActions = false;
                 // There are still things to do
                 this._startTimeout();
@@ -464,6 +476,7 @@ class ListingManager {
             }
 
             const waitForInventory = [];
+            const retryListings = [];
 
             for (const identifier in body.listings) {
                 if (!body.listings.hasOwnProperty(identifier)) {
@@ -472,24 +485,47 @@ class ListingManager {
 
                 const listing = body.listings[identifier];
                 if (listing.hasOwnProperty('error')) {
-                    if (listing.error == EFailiureReason.ItemNotInInventory || listing.error === '') {
+                    if (listing.error === '' || listing.error == EFailiureReason.ItemNotInInventory) {
                         waitForInventory.push(identifier);
-                    } else if (listing.error == EFailiureReason.RelistTimeout) {
-                        // TODO: If we get this error then we should remove the listing that is up
-
+                    } else if (listing.error.indexOf('as it already exists') !== -1 || listing.error == EFailiureReason.RelistTimeout) {
                         // This error should be extremely rare
+
+                        // Find listing matching the identifier in create queue
+                        const match = this.actions.create.find((formattet) => {
+                            if (formattet.intent == 1 && formattet.id == identifier) {
+                                return true;
+                            } else if (formattet.intent == 0 && this.schema.getName(SKU.fromString(formattet.sku)) === identifier) {
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        });
+
+                        if (match !== undefined) {
+                            // If we can't find the listing, then it was already removed / we can't identify the item / we can't properly list the item (FISK!!!)
+                            retryListings.push(match.intent == 1 ? match.id : match.sku);
+                        }
                     }
                 }
             }
 
-            this.actions.create = this.actions.create.filter((listing) => {
-                if (listing.intent === 1 && waitForInventory.indexOf(listing.id) !== -1) {
+            this.actions.create = this.actions.create.filter((formattet) => {
+                if (formattet.intent == 1 && waitForInventory.indexOf(formattet.id) !== -1) {
+                    if (formattet.attempt !== undefined) {
+                        // We have already tried to list before, remove it from the queue
+                        return false;
+                    }
+
                     // We should wait for the inventory to update
-                    listing.attempt = this._lastInventoryUpdate;
+                    formattet.attempt = this._lastInventoryUpdate;
+                    return true;
+                } else if (formattet.retry !== true && retryListings.indexOf(formattet.intent == 0 ? formattet.sku : formattet.id) !== -1) {
+                    // A similar listing was already made, we will need to remove the old listing and then try and add this one again
+                    formattet.retry = true;
                     return true;
                 }
 
-                const index = batch.findIndex((v) => v.sku === listing.sku);
+                const index = batch.findIndex((v) => v.sku === formattet.sku);
 
                 if (index !== -1) {
                     batch.splice(index, 1);
@@ -579,9 +615,9 @@ class ListingManager {
                 return false;
             }
 
-            if (listing.intent === 0 && listing.sku === v.sku) {
+            if (listing.intent == 0 && listing.sku === v.sku) {
                 return true;
-            } else if (listing.intent === 1 && listing.id === v.id) {
+            } else if (listing.intent == 1 && listing.id === v.id) {
                 return true;
             } else {
                 return false;
@@ -599,7 +635,7 @@ class ListingManager {
      * @return {Object} Returns the formattet item, null if the item does not exist
      */
     _formatItem (sku) {
-        const item = TF2SKU.fromString(sku);
+        const item = SKU.fromString(sku);
 
         const schemaItem = this.schema.getItemByDefindex(item.defindex);
 
@@ -609,15 +645,16 @@ class ListingManager {
 
         const name = this.schema.getName({
             defindex: item.defindex,
-            quality: item.quality,
+            quality: 6,
             killstreak: item.killstreak,
             australium: item.australium
         }, false);
 
         const formattet = {
-            item_name: name,
-            quality: item.quality
+            item_name: name
         };
+
+        formattet.quality = (item.quality2 !== null ? this.schema.getQualityById(item.quality2) + ' ' : '') + this.schema.getQualityById(item.quality);
 
         if (!item.craftable) {
             formattet.craftable = 0;
@@ -631,11 +668,19 @@ class ListingManager {
     }
 
     /**
-     * Returns true if there are sell orders waiting for the inventory to update
-     * @return {Boolean}
+     * Returns the amount of listings that are waiting for the inventory to update
+     * @return {Number}
      */
     _listingsWaitingForInventoryCount () {
-        return this.actions.create.filter((listing) => listing.intent === 1 && listing.attempt === this._lastInventoryUpdate).length;
+        return this.actions.create.filter((listing) => listing.intent == 1 && listing.attempt === this._lastInventoryUpdate).length;
+    }
+
+    /**
+     * Returns the amount of listings that are waiting for the listings to be updated
+     * @return {Number}
+     */
+    _listingsWaitingForRetry () {
+        return this.actions.create.filter((listing) => listing.retry !== undefined).length;
     }
 }
 
