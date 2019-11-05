@@ -364,7 +364,7 @@ class ListingManager {
      */
     _startTimers () {
         this._heartbeatInterval = setInterval(ListingManager.prototype._updateListings.bind(this, () => {}), 90000);
-        this._inventoryInterval = setInterval(ListingManager.prototype._updateInventory.bind(this, () => {}), 120000);
+        this._inventoryInterval = setInterval(ListingManager.prototype._updateInventory.bind(this, () => {}), 60000);
     }
 
     /**
