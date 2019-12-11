@@ -51,6 +51,20 @@ class ListingManager {
     }
 
     /**
+     * Sets actions
+     * @param {Object} actions
+     * @param {Array<Object>} actions.create
+     * @param {Array<Object>} actions.remove
+     */
+    setActions (actions) {
+        if (this.ready) {
+            throw new Error('Can\'t set actions while ready');
+        }
+
+        this.actions = actions;
+    }
+
+    /**
      * Initializes the module
      * @param {Function} callback
      */
@@ -83,6 +97,9 @@ class ListingManager {
 
                 // Emit listings after initializing
                 this.emit('listings', this.listings);
+
+                // Start processing actions if there are any
+                this._processActions();
 
                 return callback(null);
             });
@@ -370,7 +387,7 @@ class ListingManager {
     /**
      * Stops all timers and timeouts and clear values to default
      */
-    stop () {
+    shutdown () {
         // Stop timers
         clearTimeout(this._timeout);
         clearInterval(this._heartbeatInterval);
