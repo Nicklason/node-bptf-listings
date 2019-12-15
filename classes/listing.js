@@ -62,6 +62,15 @@ class Listing {
             craftable: this.item.flag_cannot_craft !== true
         };
 
+        // Backpack.tf uses item_name for when making listings, meaning that the defindex in some cases is incorrect
+
+        const schemaItem = this._manager.schema.getItemByDefindex(item.defindex);
+        const schemaItemByName = this._manager.schema.raw.schema.items.find((v) => v.name === schemaItem.item_name);
+
+        if (schemaItemByName !== undefined) {
+            item.defindex = schemaItemByName.defindex;
+        }
+
         const attributes = this._parseAttributes();
 
         for (const attribute in attributes) {
