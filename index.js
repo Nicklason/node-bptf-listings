@@ -238,15 +238,17 @@ class ListingManager {
      * @return {Listing} Returns matching listing
      */
     findListing (search, intent, byItem = false) {
+        const newSearch = byItem ? this.schema.getName(SKU.fromString(search)) : search;
+
         const match = this.listings.find((listing) => {
             if (listing.intent != intent) {
                 return false;
             }
 
             if (byItem === true || intent == 0) {
-                return listing.getSKU() === search;
+                return listing.getName() === newSearch;
             } else {
-                return listing.item.id == search;
+                return listing.item.id == newSearch;
             }
         });
 
@@ -254,13 +256,15 @@ class ListingManager {
     }
 
     /**
-     * Finds all listings that match sku
+     * Finds all listings that match the name of the item
      * @param {String} sku
      * @return {Array<Listing>} Returns matching listings
      */
     findListings (sku) {
+        const name = this.schema.getName(SKU.fromString(sku));
+
         return this.listings.filter((listing) => {
-            return listing.getSKU() === sku;
+            return listing.getName() === name;
         });
     }
 
