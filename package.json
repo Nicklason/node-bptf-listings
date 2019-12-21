@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/Nicklason/node-bptf-listings#readme",
   "dependencies": {
-    "@nicklason/request-retry": "^1.1.1",
+    "@nicklason/request-retry": "^1.1.2",
     "async": "^3.1.0",
     "events": "^3.0.0",
     "isobject": "^4.0.0",
@@ -30,7 +30,7 @@
     "util": "^0.12.1"
   },
   "devDependencies": {
-    "eslint": "^6.7.2",
+    "eslint": "^6.8.0",
     "eslint-config-google": "^0.14.0",
     "nodemon": "^2.0.2"
   }
