@@ -234,21 +234,20 @@ class ListingManager {
      * Searches for one specific listing by sku or assetid
      * @param {String|Number} search sku or assetid
      * @param {Number} intent 0 for buy, 1 for sell
-     * @param {Boolean} [byItem=false] true if you want to only search by sku, false if you search for a specific listing (sku or assetid)
      * @return {Listing} Returns matching listing
      */
-    findListing (search, intent, byItem = false) {
-        const newSearch = byItem ? this.schema.getName(SKU.fromString(search)) : search;
+    findListing (search, intent) {
+        const name = intent == 0 ? this.schema.getName(SKU.fromString(search)) : null;
 
         const match = this.listings.find((listing) => {
             if (listing.intent != intent) {
                 return false;
             }
 
-            if (byItem === true || intent == 0) {
-                return listing.getName() === newSearch;
+            if (intent == 0) {
+                return listing.getName() === name;
             } else {
-                return listing.item.id == newSearch;
+                return listing.item.id == search;
             }
         });
 
@@ -525,7 +524,7 @@ class ListingManager {
 
                         if (match !== undefined) {
                             // If we can't find the listing, then it was already removed / we can't identify the item / we can't properly list the item (FISK!!!)
-                            retryListings.push(match.intent == 1 ? match.id : match.sku);
+                            retryListings.push(match.intent == 0 ? identifier: match.id);
                         }
                     }
                 }
@@ -541,13 +540,31 @@ class ListingManager {
                     // We should wait for the inventory to update
                     formattet.attempt = this._lastInventoryUpdate;
                     return true;
-                } else if (formattet.retry !== true && retryListings.indexOf(formattet.intent == 0 ? formattet.sku : formattet.id) !== -1) {
+                }
+
+                const name = formattet.intent == 0 ? this.schema.getName(SKU.fromString(formattet.sku)) : null;
+
+                if (formattet.retry !== true && retryListings.indexOf(formattet.intent == 0 ? name : formattet.id) !== -1) {
                     // A similar listing was already made, we will need to remove the old listing and then try and add this one again
                     formattet.retry = true;
                     return true;
                 }
 
-                const index = batch.findIndex((v) => v.sku === formattet.sku);
+                // TODO: Create a function for the following search function
+
+                const index = batch.findIndex((v) => {
+                    if (formattet.intent !== v.intent) {
+                        return false;
+                    }
+
+                    if (formattet.intent == 0 && name === this.schema.getName(SKU.fromString(v.sku))) {
+                        return true;
+                    } else if (formattet.intent == 1 && formattet.id === v.id) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                });
 
                 if (index !== -1) {
                     batch.splice(index, 1);
@@ -632,12 +649,14 @@ class ListingManager {
      * @param {Object} listing Formattet listing
      */
     _removeEnqueued (listing) {
+        const name = this.schema.getName(SKU.fromString(listing.sku));
+
         const index = this.actions.create.findIndex((v) => {
             if (listing.intent !== v.intent) {
                 return false;
             }
 
-            if (listing.intent == 0 && listing.sku === v.sku) {
+            if (listing.intent == 0 && name === v.sku) {
                 return true;
             } else if (listing.intent == 1 && listing.id === v.id) {
                 return true;
