@@ -649,14 +649,14 @@ class ListingManager {
      * @param {Object} listing Formattet listing
      */
     _removeEnqueued (listing) {
-        const name = this.schema.getName(SKU.fromString(listing.sku));
+        const name = listing.intent == 0 ? this.schema.getName(SKU.fromString(listing.sku)) : null;
 
         const index = this.actions.create.findIndex((v) => {
             if (listing.intent !== v.intent) {
                 return false;
             }
 
-            if (listing.intent == 0 && name === v.sku) {
+            if (listing.intent == 0 && name === this.schema.getName(SKU.fromString(v.sku))) {
                 return true;
             } else if (listing.intent == 1 && listing.id === v.id) {
                 return true;
