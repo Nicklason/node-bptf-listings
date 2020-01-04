@@ -432,9 +432,15 @@ class ListingManager {
 
     /**
      * Processes action queues
+     * @param {Function} [callback]
      */
-    _processActions () {
+    _processActions (callback) {
+        if (callback === undefined) {
+            callback = noop;
+        }
+
         if (this._processingActions === true || (this.actions.remove.length === 0 && this._listingsWaitingForRetry() + this._listingsWaitingForInventoryCount() - this.actions.create.length === 0)) {
+            callback(null);
             return;
         }
 
@@ -447,18 +453,20 @@ class ListingManager {
             create: (callback) => {
                 this._create(callback);
             }
-        }, (result) => {
+        }, (err, result) => {
             // TODO: Only get listings if we created or deleted listings
 
             if (this.actions.remove.length !== 0 || this._listingsWaitingForRetry() - this.actions.create.length !== 0) {
                 this._processingActions = false;
                 // There are still things to do
                 this._startTimeout();
+                callback(null);
             } else {
                 // Queues are empty, get listings
                 this.getListings(() => {
                     this._processingActions = false;
                     this._startTimeout();
+                    callback(null);
                 });
             }
         });
@@ -470,7 +478,7 @@ class ListingManager {
      */
     _create (callback) {
         if (this.actions.create.length === 0) {
-            callback(null);
+            callback(null, null);
             return;
         }
 
@@ -585,7 +593,7 @@ class ListingManager {
      */
     _delete (callback) {
         if (this.actions.remove.length === 0) {
-            callback(null);
+            callback(null, null);
             return;
         }
 
@@ -731,3 +739,7 @@ module.exports = ListingManager;
 module.exports.Listing = Listing;
 
 module.exports.EFailiureReason = EFailiureReason;
+
+function noop () {
+
+}
