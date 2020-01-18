@@ -211,10 +211,10 @@ class ListingManager {
             this._createdListingsCount = 0;
 
             // Go through create queue and find listings that need retrying
-            this.actions.create.forEach((formattet) => {
-                if (formattet.retry !== undefined) {
+            this.actions.create.forEach((formatted) => {
+                if (formatted.retry !== undefined) {
                     // Look for a listing that has a matching sku / id
-                    const match = this.findListing(formattet.intent == 0 ? formattet.sku : formattet.id, formattet.intent);
+                    const match = this.findListing(formatted.intent == 0 ? formatted.sku : formatted.id, formatted.intent);
                     if (match !== null) {
                         // Found match, remove the listing and unset retry property
                         match.remove();
@@ -263,19 +263,19 @@ class ListingManager {
             throw new Error('Module has not been successfully initialized');
         }
 
-        const formattetArr = listings.map((value) => this._formatListing(value)).filter((formattet) => formattet !== null);
+        const formattedArr = listings.map((value) => this._formatListing(value)).filter((formatted) => formatted !== null);
 
         const remove = [];
 
-        formattetArr.forEach((formattet) => {
-            const match = this.findListing(formattet.intent == 1 ? formattet.id : formattet.sku, formattet.intent);
+        formattedArr.forEach((formatted) => {
+            const match = this.findListing(formatted.intent == 1 ? formatted.id : formatted.sku, formatted.intent);
             if (match !== null) {
                 remove.push(match.id);
             }
         });
 
         this._action('remove', remove);
-        this._action('create', formattetArr);
+        this._action('create', formattedArr);
     }
 
     /**
@@ -287,15 +287,15 @@ class ListingManager {
             throw new Error('Module has not been successfully initialized');
         }
 
-        const formattet = this._formatListing(listing);
+        const formatted = this._formatListing(listing);
 
-        if (formattet !== null) {
-            const match = this.findListing(formattet.intent == 1 ? formattet.id : formattet.sku, formattet.intent);
+        if (formatted !== null) {
+            const match = this.findListing(formatted.intent == 1 ? formatted.id : formatted.sku, formatted.intent);
             if (match !== null) {
                 match.remove();
             }
 
-            this._action('create', formattet);
+            this._action('create', formatted);
         }
     }
 
@@ -308,9 +308,9 @@ class ListingManager {
             throw new Error('Module has not been successfully initialized');
         }
 
-        const formattet = listings.map((value) => !isObject(value) ? value : value.id);
+        const formatted = listings.map((value) => !isObject(value) ? value : value.id);
 
-        this._action('remove', formattet);
+        this._action('remove', formatted);
     }
 
     /**
@@ -351,15 +351,15 @@ class ListingManager {
             }
         } else if (type === 'create') {
             // Find listings that we should make
-            const newest = array.filter((formattet) => this._isNewest(formattet));
+            const newest = array.filter((formatted) => this._isNewest(formatted));
 
             // Find listings that has old listings
-            const hasOld = newest.filter((formattet) => this._hasOld(formattet));
+            const hasOld = newest.filter((formatted) => this._hasOld(formatted));
 
             // Set new
-            newest.forEach((formattet) => this._setNew(formattet));
+            newest.forEach((formatted) => this._setNew(formatted));
 
-            hasOld.forEach((formattet) => this._removeEnqueued(formattet));
+            hasOld.forEach((formatted) => this._removeEnqueued(formatted));
 
             if (newest.length !== 0) {
                 this.actions[type] = this.actions[type].concat(newest);
@@ -379,34 +379,34 @@ class ListingManager {
         }
     }
 
-    _setNew (formattet) {
-        const identifier = formattet.intent == 0 ? formattet.sku : formattet.id;
+    _setNew (formatted) {
+        const identifier = formatted.intent == 0 ? formatted.sku : formatted.id;
 
-        if (this._actions.create[identifier] === undefined || this._actions.create[identifier].time < formattet.time) {
+        if (this._actions.create[identifier] === undefined || this._actions.create[identifier].time < formatted.time) {
             // First time we see the item, it is new
-            this._actions.create[identifier] = formattet;
+            this._actions.create[identifier] = formatted;
         }
     }
 
-    _hasOld (formattet) {
-        const identifier = formattet.intent == 0 ? formattet.sku : formattet.id;
+    _hasOld (formatted) {
+        const identifier = formatted.intent == 0 ? formatted.sku : formatted.id;
 
         if (this._actions.create[identifier] === undefined) {
             return false;
         }
 
         // Returns true if listing in map is older
-        return this._actions.create[identifier].time < formattet.time;
+        return this._actions.create[identifier].time < formatted.time;
     }
 
-    _isNewest (formattet) {
-        const identifier = formattet.intent == 0 ? formattet.sku : formattet.id;
+    _isNewest (formatted) {
+        const identifier = formatted.intent == 0 ? formatted.sku : formatted.id;
 
         if (this._actions.create[identifier] === undefined) {
             return true;
         }
 
-        if (this._actions.create[identifier].time < formattet.time) {
+        if (this._actions.create[identifier].time < formatted.time) {
             // This listing is newer that the old one
             return true;
         }
@@ -566,7 +566,7 @@ class ListingManager {
                         // This error should be extremely rare
 
                         // Find listing matching the identifier in create queue
-                        const match = this.actions.create.find((formattet) => this._isSameByIdentifier(formattet, formattet.intent, identifier));
+                        const match = this.actions.create.find((formatted) => this._isSameByIdentifier(formatted, formatted.intent, identifier));
 
                         if (match !== undefined) {
                             // If we can't find the listing, then it was already removed / we can't identify the item / we can't properly list the item (FISK!!!)
@@ -578,31 +578,31 @@ class ListingManager {
                 }
             }
 
-            this.actions.create = this.actions.create.filter((formattet) => {
-                if (formattet.intent == 1 && waitForInventory.indexOf(formattet.id) !== -1) {
-                    if (formattet.attempt !== undefined) {
+            this.actions.create = this.actions.create.filter((formatted) => {
+                if (formatted.intent == 1 && waitForInventory.indexOf(formatted.id) !== -1) {
+                    if (formatted.attempt !== undefined) {
                         // We have already tried to list before, remove it from the queue
                         return false;
                     }
 
                     // We should wait for the inventory to update
-                    formattet.attempt = this._lastInventoryUpdate;
+                    formatted.attempt = this._lastInventoryUpdate;
                     return true;
                 }
 
-                const name = formattet.intent == 0 ? this.schema.getName(SKU.fromString(formattet.sku)) : null;
+                const name = formatted.intent == 0 ? this.schema.getName(SKU.fromString(formatted.sku)) : null;
 
-                if (formattet.retry !== true && retryListings.indexOf(formattet.intent == 0 ? name : formattet.id) !== -1) {
+                if (formatted.retry !== true && retryListings.indexOf(formatted.intent == 0 ? name : formatted.id) !== -1) {
                     // A similar listing was already made, we will need to remove the old listing and then try and add this one again
-                    formattet.retry = true;
+                    formatted.retry = true;
                     return true;
                 }
 
-                const index = batch.findIndex((v) => this._isSame(formattet, v));
+                const index = batch.findIndex((v) => this._isSame(formatted, v));
 
                 if (index !== -1) {
                     // Listing was created, remove it from the batch and from the actions map
-                    delete this._actions.create[formattet.intent == 0 ? formattet.sku : formattet.id];
+                    delete this._actions.create[formatted.intent == 0 ? formatted.sku : formatted.id];
                     batch.splice(index, 1);
                 }
 
@@ -660,7 +660,7 @@ class ListingManager {
     /**
      * Formats a listing so that it is ready to be sent to backpack.tf
      * @param {Object} listing
-     * @return {Object} listing if formattet correctly, null if not
+     * @return {Object} listing if formatted correctly, null if not
      */
     _formatListing (listing) {
         if (listing.time === undefined) {
@@ -687,20 +687,20 @@ class ListingManager {
 
     /**
      * Removes a matching enqueued listing
-     * @param {Object} formattet Formattet listing
+     * @param {Object} formatted formatted listing
      * @return {Boolean} True if removed anything
      */
-    _removeEnqueued (formattet) {
+    _removeEnqueued (formatted) {
         let removed = false;
 
         for (let i = this.actions.create.length - 1; i >= 0; i--) {
             const v = this.actions.create[i];
 
-            if (!this._isSame(formattet, v)) {
+            if (!this._isSame(formatted, v)) {
                 continue;
             }
 
-            if (!this._isNewest(formattet)) {
+            if (!this._isNewest(formatted)) {
                 this.actions.create.splice(i, 1);
                 removed = true;
                 break;
@@ -727,7 +727,7 @@ class ListingManager {
     /**
      * Converts an sku into an item object that backpack.tf understands
      * @param {String} sku
-     * @return {Object} Returns the formattet item, null if the item does not exist
+     * @return {Object} Returns the formatted item, null if the item does not exist
      */
     _formatItem (sku) {
         const item = SKU.fromString(sku);
@@ -745,21 +745,21 @@ class ListingManager {
             australium: item.australium
         }, false);
 
-        const formattet = {
+        const formatted = {
             item_name: name
         };
 
-        formattet.quality = (item.quality2 !== null ? this.schema.getQualityById(item.quality2) + ' ' : '') + this.schema.getQualityById(item.quality);
+        formatted.quality = (item.quality2 !== null ? this.schema.getQualityById(item.quality2) + ' ' : '') + this.schema.getQualityById(item.quality);
 
         if (!item.craftable) {
-            formattet.craftable = 0;
+            formatted.craftable = 0;
         }
 
         if (item.effect !== null) {
-            formattet.priceindex = item.effect;
+            formatted.priceindex = item.effect;
         }
 
-        return formattet;
+        return formatted;
     }
 
     /**
