@@ -108,7 +108,12 @@ class Listing {
      * @param {Boolean} [properties.buyout]
      */
     update (properties) {
+        if (properties.time === undefined) {
+            return;
+        }
+
         const listing = {
+            time: properties.time,
             intent: this.intent
         };
 
@@ -118,7 +123,7 @@ class Listing {
             listing.id = this.item.id;
         }
 
-        ['time', 'currencies', 'details', 'offers', 'buyout'].forEach((property) => {
+        ['currencies', 'details', 'offers', 'buyout'].forEach((property) => {
             if (properties[property] === undefined) {
                 listing[property] = this[property];
             } else {
