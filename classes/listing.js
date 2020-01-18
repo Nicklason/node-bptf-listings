@@ -118,7 +118,7 @@ class Listing {
             listing.id = this.item.id;
         }
 
-        ['currencies', 'details', 'offers', 'buyout'].forEach((property) => {
+        ['time', 'currencies', 'details', 'offers', 'buyout'].forEach((property) => {
             if (properties[property] === undefined) {
                 listing[property] = this[property];
             } else {

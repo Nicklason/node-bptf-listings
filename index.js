@@ -49,6 +49,7 @@ class ListingManager {
 
         this._lastInventoryUpdate = null;
         this._createdListingsCount = 0;
+        this._listings = {};
         this._actions = {
             create: {},
             remove: {}
@@ -199,7 +200,14 @@ class ListingManager {
 
             this.cap = body.cap;
             this.promotes = body.promotes_remaining;
-            this.listings = body.listings.map((listing) => new Listing(listing, this));
+            this.listings = body.listings.filter((raw) => raw.appid == 440).map((raw) => new Listing(raw, this));
+
+            // Populate map
+            this._listings = {};
+            this.listings.forEach((listing) => {
+                this._listings[listing.intent == 0 ? listing.getName() : listing.item.id] = listing;
+            });
+
             this._createdListingsCount = 0;
 
             // Go through create queue and find listings that need retrying
@@ -229,21 +237,8 @@ class ListingManager {
      * @return {Listing} Returns matching listing
      */
     findListing (search, intent) {
-        const name = intent == 0 ? this.schema.getName(SKU.fromString(search)) : null;
-
-        const match = this.listings.find((listing) => {
-            if (listing.intent != intent) {
-                return false;
-            }
-
-            if (intent == 0) {
-                return listing.getName() === name;
-            } else {
-                return listing.item.id == search;
-            }
-        });
-
-        return match === undefined ? null : match;
+        const identifier = intent == 0 ? this.schema.getName(SKU.fromString(search)) : search;
+        return this._listings[identifier] === undefined ? null : this._listings[identifier];
     }
 
     /**
@@ -355,22 +350,69 @@ class ListingManager {
                 doneSomething = true;
             }
         } else if (type === 'create') {
-            // Check if the item is already in the queue
-            array.forEach((formattet) => {
-                this._removeEnqueued(formattet);
-            });
+            // Find listings that we should make
+            const newest = array.filter((formattet) => this._isNewest(formattet));
 
-            this.actions[type] = this.actions[type].concat(array);
-            doneSomething = true;
+            // Find listings that has old listings
+            const hasOld = newest.filter((formattet) => this._hasOld(formattet));
+
+            // Set new
+            newest.forEach((formattet) => this._setNew(formattet));
+
+            hasOld.forEach((formattet) => this._removeEnqueued(formattet));
+
+            if (newest.length !== 0) {
+                this.actions[type] = this.actions[type].concat(newest);
+                doneSomething = true;
+            }
         }
 
         if (doneSomething) {
             this.emit('actions', this.actions);
 
-            if (type !== 'create' || this.actions.create.length < this.batchSize) {
+            if (this.actions.create.length >= this.batchSize) {
+                clearTimeout(this._timeout);
+                this._processActions();
+            } else {
                 this._startTimeout();
             }
         }
+    }
+
+    _setNew (formattet) {
+        const identifier = formattet.intent == 0 ? formattet.sku : formattet.id;
+
+        if (this._actions.create[identifier] === undefined || this._actions.create[identifier].time < formattet.time) {
+            // First time we see the item, it is new
+            this._actions.create[identifier] = formattet;
+        }
+    }
+
+    _hasOld (formattet) {
+        const identifier = formattet.intent == 0 ? formattet.sku : formattet.id;
+
+        if (this._actions.create[identifier] === undefined) {
+            return false;
+        }
+
+        // Returns true if listing in map is older
+        return this._actions.create[identifier].time < formattet.time;
+    }
+
+    _isNewest (formattet) {
+        const identifier = formattet.intent == 0 ? formattet.sku : formattet.id;
+
+        if (this._actions.create[identifier] === undefined) {
+            return true;
+        }
+
+        if (this._actions.create[identifier].time < formattet.time) {
+            // This listing is newer that the old one
+            return true;
+        }
+
+        // Listing is not the newest
+        return false;
     }
 
     /**
@@ -621,6 +663,11 @@ class ListingManager {
      * @return {Object} listing if formattet correctly, null if not
      */
     _formatListing (listing) {
+        if (listing.time === undefined) {
+            // If a time is not added then ignore the listing (this is to make sure that the listings are up to date)
+            return null;
+        }
+
         if (listing.intent == 0) {
             if (listing.sku === undefined) {
                 return null;
@@ -644,15 +691,6 @@ class ListingManager {
      * @return {Boolean} True if removed anything
      */
     _removeEnqueued (formattet) {
-        if (this._actions.create[formattet.intent == 0 ? formattet.sku : formattet.id] === undefined) {
-            // We are not already making a listing for this item, skip going through the queue
-
-            // Set the listing as enqueued
-            this._actions.create[formattet.intent == 0 ? formattet.sku : formattet.id] = formattet;
-            return;
-        }
-
-        let found = false;
         let removed = false;
 
         for (let i = this.actions.create.length - 1; i >= 0; i--) {
@@ -662,11 +700,10 @@ class ListingManager {
                 continue;
             }
 
-            if (found) {
+            if (!this._isNewest(formattet)) {
                 this.actions.create.splice(i, 1);
                 removed = true;
-            } else {
-                found = true;
+                break;
             }
         }
 
