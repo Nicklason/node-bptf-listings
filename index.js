@@ -48,20 +48,11 @@ class ListingManager {
         this.schema = options.schema || null;
 
         this._lastInventoryUpdate = null;
-    }
-
-    /**
-     * Sets actions
-     * @param {Object} actions
-     * @param {Array<Object>} actions.create
-     * @param {Array<Object>} actions.remove
-     */
-    setActions (actions) {
-        if (this.ready) {
-            throw new Error('Can\'t set actions while ready');
-        }
-
-        this.actions = actions;
+        this._createdListingsCount = 0;
+        this._actions = {
+            create: {},
+            remove: {}
+        };
     }
 
     /**
@@ -209,6 +200,7 @@ class ListingManager {
             this.cap = body.cap;
             this.promotes = body.promotes_remaining;
             this.listings = body.listings.map((listing) => new Listing(listing, this));
+            this._createdListingsCount = 0;
 
             // Go through create queue and find listings that need retrying
             this.actions.create.forEach((formattet) => {
@@ -357,7 +349,7 @@ class ListingManager {
         let doneSomething = false;
 
         if (type === 'remove') {
-            const noMatch = array.filter((id) => this.actions.create.indexOf(id) === -1);
+            const noMatch = array.filter((id) => this.actions.remove.indexOf(id) === -1);
             if (noMatch.length !== 0) {
                 this.actions[type] = this.actions[type].concat(noMatch);
                 doneSomething = true;
@@ -375,7 +367,9 @@ class ListingManager {
         if (doneSomething) {
             this.emit('actions', this.actions);
 
-            this._startTimeout();
+            if (type !== 'create' || this.actions.create.length < this.batchSize) {
+                this._startTimeout();
+            }
         }
     }
 
@@ -402,7 +396,9 @@ class ListingManager {
         this.cap = null;
         this.promotes = null;
         this.actions = { create: [], remove: [] };
+        this._actions = { create: {}, remove: {} };
         this._lastInventoryUpdate = null;
+        this._createdListingsCount = 0;
     }
 
     /**
@@ -459,13 +455,13 @@ class ListingManager {
             if (this.actions.remove.length !== 0 || this._listingsWaitingForRetry() - this.actions.create.length !== 0) {
                 this._processingActions = false;
                 // There are still things to do
-                this._startTimeout();
+                this._processActions();
                 callback(null);
             } else {
                 // Queues are empty, get listings
                 this.getListings(() => {
                     this._processingActions = false;
-                    this._startTimeout();
+                    this._processActions();
                     callback(null);
                 });
             }
@@ -478,6 +474,14 @@ class ListingManager {
      */
     _create (callback) {
         if (this.actions.create.length === 0) {
+            callback(null, null);
+            return;
+        }
+
+        if (this.listings.length + this._createdListingsCount >= this.cap) {
+            // Reached listing cap, clear create queue
+            this.actions.create = [];
+            this._actions.create = {};
             callback(null, null);
             return;
         }
@@ -520,21 +524,15 @@ class ListingManager {
                         // This error should be extremely rare
 
                         // Find listing matching the identifier in create queue
-                        const match = this.actions.create.find((formattet) => {
-                            if (formattet.intent == 1 && formattet.id == identifier) {
-                                return true;
-                            } else if (formattet.intent == 0 && this.schema.getName(SKU.fromString(formattet.sku)) === identifier) {
-                                return true;
-                            } else {
-                                return false;
-                            }
-                        });
+                        const match = this.actions.create.find((formattet) => this._isSameByIdentifier(formattet, formattet.intent, identifier));
 
                         if (match !== undefined) {
                             // If we can't find the listing, then it was already removed / we can't identify the item / we can't properly list the item (FISK!!!)
                             retryListings.push(match.intent == 0 ? identifier: match.id);
                         }
                     }
+                } else {
+                    this._createdListingsCount++;
                 }
             }
 
@@ -558,23 +556,11 @@ class ListingManager {
                     return true;
                 }
 
-                // TODO: Create a function for the following search function
-
-                const index = batch.findIndex((v) => {
-                    if (formattet.intent !== v.intent) {
-                        return false;
-                    }
-
-                    if (formattet.intent == 0 && name === this.schema.getName(SKU.fromString(v.sku))) {
-                        return true;
-                    } else if (formattet.intent == 1 && formattet.id === v.id) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                });
+                const index = batch.findIndex((v) => this._isSame(formattet, v));
 
                 if (index !== -1) {
+                    // Listing was created, remove it from the batch and from the actions map
+                    delete this._actions.create[formattet.intent == 0 ? formattet.sku : formattet.id];
                     batch.splice(index, 1);
                 }
 
@@ -654,28 +640,51 @@ class ListingManager {
 
     /**
      * Removes a matching enqueued listing
-     * @param {Object} listing Formattet listing
+     * @param {Object} formattet Formattet listing
+     * @return {Boolean} True if removed anything
      */
-    _removeEnqueued (listing) {
-        const name = listing.intent == 0 ? this.schema.getName(SKU.fromString(listing.sku)) : null;
+    _removeEnqueued (formattet) {
+        if (this._actions.create[formattet.intent == 0 ? formattet.sku : formattet.id] === undefined) {
+            // We are not already making a listing for this item, skip going through the queue
 
-        const index = this.actions.create.findIndex((v) => {
-            if (listing.intent !== v.intent) {
-                return false;
-            }
-
-            if (listing.intent == 0 && name === this.schema.getName(SKU.fromString(v.sku))) {
-                return true;
-            } else if (listing.intent == 1 && listing.id === v.id) {
-                return true;
-            } else {
-                return false;
-            }
-        });
-
-        if (index !== -1) {
-            this.actions.create.splice(index, 1);
+            // Set the listing as enqueued
+            this._actions.create[formattet.intent == 0 ? formattet.sku : formattet.id] = formattet;
+            return;
         }
+
+        let found = false;
+        let removed = false;
+
+        for (let i = this.actions.create.length - 1; i >= 0; i--) {
+            const v = this.actions.create[i];
+
+            if (!this._isSame(formattet, v)) {
+                continue;
+            }
+
+            if (found) {
+                this.actions.create.splice(i, 1);
+                removed = true;
+            } else {
+                found = true;
+            }
+        }
+
+        return removed;
+    }
+
+    _isSame (original, test) {
+        return this._isSameByIdentifier(original, test.intent, test.intent == 0 ? this.schema.getName(SKU.fromString(test.sku)) : test.id);
+    }
+
+    _isSameByIdentifier (original, testIntent, testIdentifier) {
+        if (original.intent !== testIntent) {
+            return false;
+        }
+
+        const originalIdentifier = original.intent == 0 ? this.schema.getName(SKU.fromString(original.sku)) : original.id;
+
+        return originalIdentifier === testIdentifier;
     }
 
     /**
@@ -740,6 +749,4 @@ module.exports.Listing = Listing;
 
 module.exports.EFailiureReason = EFailiureReason;
 
-function noop () {
-
-}
+function noop () {}
