@@ -687,7 +687,7 @@ class ListingManager {
 
     /**
      * Removes a matching enqueued listing
-     * @param {Object} formatted formatted listing
+     * @param {Object} formatted Formatted listing
      * @return {Boolean} True if removed anything
      */
     _removeEnqueued (formatted) {
