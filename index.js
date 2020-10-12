@@ -742,7 +742,8 @@ class ListingManager {
             defindex: item.defindex,
             quality: 6,
             killstreak: item.killstreak,
-            australium: item.australium
+            australium: item.australium,
+            target: item.target
         }, false);
 
         const formatted = {
