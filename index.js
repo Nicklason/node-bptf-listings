@@ -137,26 +137,29 @@ class ListingManager {
      */
     _updateInventory (callback) {
         const options = {
-            method: 'GET',
-            url: `https://backpack.tf/_inventory/${this.steamid.getSteamID64()}`,
+            method: 'POST',
+            url: `https://backpack.tf/api/inventory/${this.steamid.getSteamID64()}/refresh`,
+            qs:{
+                token:this.token
+            },
             gzip: true,
             json: true
         };
 
-        request(options, (err, response, body) => {
+        request(options, (err, response,body) => {
             if (err) {
                 return callback(err);
             }
 
-            if (body.status.id == -1) {
-                return callback(new Error(body.status.text + ' (' + body.status.extra + ')'));
+            if (response.status >=400) {
+                return callback(new Error(response.status + ' (' + response.statusText + ')'));
             }
 
-            const time = moment.unix(body.time.timestamp);
+            const time = moment.unix(response.data.last_update)
 
             if (this._lastInventoryUpdate === null) {
                 this._lastInventoryUpdate = time;
-            } else if (body.fallback.available === false && time.unix() !== this._lastInventoryUpdate.unix()) {
+            } else if (time.unix() !== this._lastInventoryUpdate.unix()) {
                 // The inventory has updated on backpack.tf
                 this._lastInventoryUpdate = time;
 
