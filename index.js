@@ -743,7 +743,8 @@ class ListingManager {
             quality: 6,
             killstreak: item.killstreak,
             australium: item.australium,
-            target: item.target
+            target: item.target,
+            crateseries: item.crateseries
         }, false);
 
         const formatted = {
