@@ -747,8 +747,19 @@ class ListingManager {
         }, false);
 
         const formatted = {
-            item_name: name
-        };
+            item_name: name	            item_name: 
+                name.toLowerCase().includes('unusualifier')
+                    ? 'Unusualifier'
+                      : name.toLowerCase().includes('strangifier')
+                      ? 'Strangifier'
+                      : name.toLowerCase().includes('fabricator')
+                      ? 'Fabricator'
+                      : name.toLowerCase().includes('kit')
+                      ? 'Kit'
+                      : name.toLowerCase().includes('chemistry set')
+                      ? 'Chemistry Set'
+                      : name
+        };	        };
 
         formatted.quality = (item.quality2 !== null ? this.schema.getQualityById(item.quality2) + ' ' : '') + this.schema.getQualityById(item.quality);
 
@@ -758,7 +769,23 @@ class ListingManager {
 
         if (item.effect !== null) {
             formatted.priceindex = item.effect;
-        }
+        }else if (item.craftnumber !== null) {
+            formatted.priceindex = item.craftnumber;
+        } else if (item.crateseries !== null) {
+            formatted.priceindex = item.crateseries;
+        } else if ((name.toLowerCase().includes('unusualifier') || name.toLowerCase().includes('strangifier')) && item.target !== null) {
+            formatted.priceindex = item.target;
+        } else if (name.toLowerCase().includes('fabricator') && item.outputQuality !== null && item.output !== null && item.target !== null) {
+            // fabricator
+            formatted.priceindex = `${item.output}-${item.outputQuality}-${item.target}`;
+        } else if (name.toLowerCase().includes('kit') && item.killstreak !== null && item.target !== null) {
+            // killstreak kit
+            formatted.priceindex = `${item.killstreak}-${item.target}`;
+        } else if (name.toLowerCase().includes('chemistry set')) {
+            // Chemistry Set Collector's (item.output)
+            // Chemistry Set Strangifier (item.target)
+            formatted.priceindex = `${item.target === null ? item.output : item.target}-${item.outputQuality}`
+        }	        }
 
         return formatted;
     }
